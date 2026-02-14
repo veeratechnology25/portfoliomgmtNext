@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://portfoliomgmt-backend.vercel.app/api';
+// || 'http://localhost:8000/api'
 
 // Create axios instance
 const api: AxiosInstance = axios.create({

@@ -78,7 +78,7 @@ export default function RisksPage() {
     } catch (error: any) {
       console.error('Failed to fetch risks:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
-      
+
       if (error.response?.status === 404) {
         toast.error('API endpoint not found. Please ensure the Django backend server is running on port 8000.');
       } else if (error.response?.status === 500) {
@@ -86,7 +86,7 @@ export default function RisksPage() {
       } else {
         toast.error('Failed to load risks - using demo data');
       }
-      
+
       // Fallback to mock data if API fails
       console.log('Using fallback mock data...');
       const mockRisks: Risk[] = [
@@ -279,12 +279,12 @@ export default function RisksPage() {
   };
 
   const filteredRisks = risks.filter((risk) => {
-    const matchesSearch = 
+    const matchesSearch =
       risk.title.toLowerCase().includes(search.toLowerCase()) ||
       risk.description.toLowerCase().includes(search.toLowerCase()) ||
       risk.risk_owner?.toLowerCase().includes(search.toLowerCase()) ||
       risk.department.toLowerCase().includes(search.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || risk.status === statusFilter;
     const matchesRiskLevel = riskLevelFilter === 'all' || risk.risk_level === riskLevelFilter;
     const matchesCategory = categoryFilter === 'all' || risk.category === categoryFilter;
@@ -299,7 +299,7 @@ export default function RisksPage() {
   const mitigatedCount = risks.filter(r => r.status === 'mitigated').length;
   const closedCount = risks.filter(r => r.status === 'closed').length;
   const highRiskCount = risks.filter(r => r.risk_level === 'high').length;
-  const averageRiskScore = risks.length > 0 
+  const averageRiskScore = risks.length > 0
     ? Math.round(risks.reduce((sum, r) => sum + r.risk_score, 0) / risks.length)
     : 0;
 
@@ -374,12 +374,19 @@ export default function RisksPage() {
               <p className="text-gray-600">Comprehensive risk register with assessments and mitigations</p>
             </div>
             <div className="flex space-x-2">
+              <Link href="/risks/categories">
+                <Button variant="outline" className="flex items-center">
+                  Manage Categories
+                </Button>
+              </Link>
+
               <Link href="/risks/heatmap">
                 <Button variant="outline" className="flex items-center">
                   <FireIcon className="h-4 w-4 mr-2" />
                   Risk Heatmap
                 </Button>
               </Link>
+
               <Link href="/risks/risks/bulk">
                 <Button variant="outline" className="flex items-center">
                   <FunnelIcon className="h-4 w-4 mr-2" />
@@ -633,15 +640,19 @@ export default function RisksPage() {
                                 {risk.issues_count} issues
                               </span>
                             </div>
-                            {risk.affected_areas.length > 0 && (
+                            {(risk.affected_areas?.length ?? 0) > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
-                                {risk.affected_areas.map((area, index) => (
-                                  <span key={index} className="inline-flex px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                                {(risk.affected_areas ?? []).map((area, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800"
+                                  >
                                     {area}
                                   </span>
                                 ))}
                               </div>
                             )}
+
                           </div>
                         </div>
                       </div>
@@ -656,8 +667,8 @@ export default function RisksPage() {
                               <Button variant="outline" size="sm">Edit</Button>
                             </Link>
                             {risk.status === 'open' && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => handleEscalateRisk(risk.id)}
                                 className="text-orange-600 hover:text-orange-700"
@@ -666,8 +677,8 @@ export default function RisksPage() {
                               </Button>
                             )}
                             {(risk.status === 'open' || risk.status === 'escalated') && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => handleCloseRisk(risk.id)}
                                 className="text-green-600 hover:text-green-700"
