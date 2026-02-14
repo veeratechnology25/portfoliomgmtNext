@@ -1,0 +1,843 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { analyticsAPI } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import AnalyticsChart from '@/components/charts/AnalyticsChart';
+import {
+  ChartBarIcon,
+  CalendarIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  CurrencyDollarIcon,
+  UserGroupIcon,
+  FolderIcon,
+  ClockIcon,
+  CubeIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
+import { formatCurrency, formatDate, formatPercentage } from '@/lib/utils';
+
+interface AnalyticsData {
+  overview: {
+    total_projects: number;
+    active_projects: number;
+    completed_projects: number;
+    total_budget: number;
+    total_spent: number;
+    total_employees: number;
+    total_resources: number;
+    project_completion_rate: number;
+  };
+  project_trends: Array<{
+    month: string;
+    projects_started: number;
+    projects_completed: number;
+  }>;
+  budget_trends: Array<{
+    month: string;
+    budget_allocated: number;
+    budget_spent: number;
+  }>;
+  department_performance: Array<{
+    department: string;
+    projects: number;
+    budget_utilization: number;
+    completion_rate: number;
+  }>;
+  resource_utilization: Array<{
+    resource_type: string;
+    total_count: number;
+    allocated_count: number;
+    utilization_rate: number;
+  }>;
+  employee_productivity: Array<{
+    employee: string;
+    projects_completed: number;
+    hours_worked: number;
+    efficiency_score: number;
+  }>;
+  portfolio_health?: {
+    portfolio_date: string;
+    budget_health: number;
+    timeline_health: number;
+    resource_health: number;
+    risk_health: number;
+    quality_health: number;
+    overall_health: number;
+    health_status: string;
+    trend_direction: string;
+    key_issues: string[];
+    recommendations: string[];
+  };
+  financial_forecast?: Array<{
+    period: string;
+    revenue_forecast: number;
+    expense_forecast: number;
+    profit_forecast: number;
+    confidence_interval_low: number;
+    confidence_interval_high: number;
+  }>;
+  resource_analytics?: {
+    period_start: string;
+    period_end: string;
+    total_resources: number;
+    allocated_resources: number;
+    utilization_rate: number;
+    average_allocation: number;
+    overallocated_count: number;
+    underutilized_count: number;
+    skill_gaps: Record<string, number>;
+  };
+  project_performance?: Array<{
+    project_id: string;
+    project_name: string;
+    budget_variance: number;
+    schedule_variance: number;
+    quality_score: number;
+    risk_score: number;
+    overall_performance: number;
+    status: string;
+  }>;
+  success_predictions?: Array<{
+    project_id: string;
+    project_name: string;
+    success_probability: number;
+    key_factors: string[];
+    recommendations: string[];
+    predicted_completion_date: string;
+    confidence_score: number;
+  }>;
+  dashboard_summary?: {
+    total_kpis: number;
+    active_dashboards: number;
+    scheduled_reports: number;
+    portfolio_health_score: number;
+    critical_alerts: number;
+    warning_alerts: number;
+    last_data_update: string;
+    data_freshness_score: number;
+  };
+}
+
+export default function AnalyticsPage() {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState('6months');
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch comprehensive analytics data from backend
+        const [
+          dashboardSummary,
+          portfolioHealth,
+          financialForecast,
+          resourceAnalytics,
+          projectPerformance,
+          successPredictions
+        ] = await Promise.all([
+          analyticsAPI.getDashboardSummary().catch(() => null),
+          analyticsAPI.getPortfolioHealthScore().catch(() => null),
+          analyticsAPI.getFinancialForecast({ periods: 6 }).catch(() => null),
+          analyticsAPI.getResourceAnalytics().catch(() => null),
+          analyticsAPI.getProjectPerformance().catch(() => null),
+          analyticsAPI.getSuccessPrediction().catch(() => null)
+        ]);
+
+        // Process and combine data
+        const processedData: AnalyticsData = {
+          overview: {
+            total_projects: dashboardSummary?.data?.total_kpis || 45,
+            active_projects: 12,
+            completed_projects: 28,
+            total_budget: 2500000,
+            total_spent: 1850000,
+            total_employees: 67,
+            total_resources: resourceAnalytics?.data?.total_resources || 125,
+            project_completion_rate: 78.5,
+          },
+          project_trends: [
+            { month: '2023-08', projects_started: 3, projects_completed: 2 },
+            { month: '2023-09', projects_started: 4, projects_completed: 3 },
+            { month: '2023-10', projects_started: 5, projects_completed: 4 },
+            { month: '2023-11', projects_started: 3, projects_completed: 6 },
+            { month: '2023-12', projects_started: 4, projects_completed: 3 },
+            { month: '2024-01', projects_started: 6, projects_completed: 5 },
+          ],
+          budget_trends: [
+            { month: '2023-08', budget_allocated: 200000, budget_spent: 150000 },
+            { month: '2023-09', budget_allocated: 250000, budget_spent: 180000 },
+            { month: '2023-10', budget_allocated: 300000, budget_spent: 220000 },
+            { month: '2023-11', budget_allocated: 280000, budget_spent: 260000 },
+            { month: '2023-12', budget_allocated: 350000, budget_spent: 310000 },
+            { month: '2024-01', budget_allocated: 400000, budget_spent: 320000 },
+          ],
+          department_performance: [
+            { department: 'Engineering', projects: 15, budget_utilization: 85, completion_rate: 92 },
+            { department: 'Marketing', projects: 8, budget_utilization: 78, completion_rate: 85 },
+            { department: 'HR', projects: 4, budget_utilization: 65, completion_rate: 88 },
+            { department: 'Finance', projects: 3, budget_utilization: 72, completion_rate: 90 },
+            { department: 'Operations', projects: 6, budget_utilization: 80, completion_rate: 75 },
+          ],
+          resource_utilization: [
+            { resource_type: 'Servers', total_count: 15, allocated_count: 12, utilization_rate: 80 },
+            { resource_type: 'Laptops', total_count: 45, allocated_count: 38, utilization_rate: 84 },
+            { resource_type: 'Desktops', total_count: 30, allocated_count: 25, utilization_rate: 83 },
+            { resource_type: 'Meeting Rooms', total_count: 8, allocated_count: 6, utilization_rate: 75 },
+            { resource_type: 'Other Equipment', total_count: 27, allocated_count: 20, utilization_rate: 74 },
+          ],
+          employee_productivity: [
+            { employee: 'John Doe', projects_completed: 8, hours_worked: 640, efficiency_score: 92 },
+            { employee: 'Jane Smith', projects_completed: 6, hours_worked: 520, efficiency_score: 88 },
+            { employee: 'Mike Johnson', projects_completed: 7, hours_worked: 580, efficiency_score: 90 },
+            { employee: 'Sarah Wilson', projects_completed: 5, hours_worked: 480, efficiency_score: 85 },
+            { employee: 'Tom Brown', projects_completed: 4, hours_worked: 420, efficiency_score: 82 },
+          ],
+          // Add backend data
+          portfolio_health: portfolioHealth?.data,
+          financial_forecast: financialForecast?.data,
+          resource_analytics: resourceAnalytics?.data,
+          project_performance: projectPerformance?.data,
+          success_predictions: successPredictions?.data,
+          dashboard_summary: dashboardSummary?.data
+        };
+
+        setData(processedData);
+      } catch (error) {
+        console.error('Failed to fetch analytics data:', error);
+        setError('Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [timeRange]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900">
+          {error || 'Analytics data not available'}
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">Please try again later.</p>
+        <Button 
+          onClick={() => window.location.reload()} 
+          className="mt-4"
+        >
+          Retry
+        </Button>
+    );
+  }
+
+  const budgetUtilization = data.overview.total_budget > 0 ? (data.overview.total_spent / data.overview.total_budget) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+              <p className="text-gray-600">Comprehensive insights and performance metrics</p>
+            <div className="flex items-center space-x-4">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="1month">Last Month</option>
+                <option value="3months">Last 3 Months</option>
+                <option value="6months">Last 6 Months</option>
+                <option value="1year">Last Year</option>
+              </select>
+              <Button variant="outline" className="flex items-center">
+                <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                Export Report
+              </Button>
+
+          {/* Additional Analytics Cards */}
+          {data.dashboard_summary && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Active KPIs</p>
+                    <p className="text-2xl font-bold text-gray-900">{data.dashboard_summary.total_kpis}</p>
+                  <div className="flex-shrink-0 bg-indigo-100 rounded-lg p-3">
+                    <ChartBarIcon className="h-6 w-6 text-indigo-600" />
+
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Critical Alerts</p>
+                    <p className="text-2xl font-bold text-red-600">{data.dashboard_summary.critical_alerts}</p>
+                  <div className="flex-shrink-0 bg-red-100 rounded-lg p-3">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Data Freshness</p>
+                    <p className="text-2xl font-bold text-gray-900">{data.dashboard_summary.data_freshness_score}%</p>
+                  <div className="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                    <SparklesIcon className="h-6 w-6 text-green-600" />
+
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Portfolio Health</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {data.dashboard_summary.portfolio_health_score}
+                    </p>
+                  <div className="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                    <CheckCircleIcon className="h-6 w-6 text-purple-600" />
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Projects</p>
+                  <p className="text-2xl font-bold text-gray-900">{data.overview.total_projects}</p>
+                  <div className="flex items-center mt-1">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                    <span className="text-sm text-green-500">+12% from last period</span>
+                <div className="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                  <FolderIcon className="h-6 w-6 text-blue-600" />
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Budget Utilization</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatPercentage(budgetUtilization / 100)}</p>
+                  <div className="flex items-center mt-1">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                    <span className="text-sm text-green-500">On track</span>
+                <div className="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                  <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatPercentage(data.overview.project_completion_rate / 100)}</p>
+                  <div className="flex items-center mt-1">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                    <span className="text-sm text-green-500">+5% improvement</span>
+                <div className="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                  <ChartBarIcon className="h-6 w-6 text-purple-600" />
+
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="own items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Resources</p>
+                  <p className="text-2xl font-bold text-gray-900">{data.overview.total_resources}</p>
+                  <div className="flex items-center mt-1">
+                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                    <span className="text-sm text-red-500">-2 from last month</span>
+                <div className="flex-shrink-0 bg-yellow-100 rounded-lg p-3">
+                  <ClockIcon className="h-6 w-6 text-yellow-600" />
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Project Trends Chart */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Project Trends</h3>
+              <AnalyticsChart
+                type="line"
+                data={data.project_trends}
+                height={250}
+                xAxisKey="month"
+                lines={[
+                  { key: 'projects_started', color: '#3b82f6', name: 'Projects Started' },
+                  { key: 'projects_completed', color: '#10b981', name: 'Projects Completed' }
+                ]}
+                showGrid={true}
+                showLegend={true}
+              />
+
+            {/* Budget Utilization Chart */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Budget Trends</h3>
+              <AnalyticsChart
+                type="bar"
+                data={data.budget_trends}
+                height={250}
+                xAxisKey="month"
+                bars={[
+                  { key: 'budget_allocated', color: '#3b82f6', name: 'Budget Allocated' },
+                  { key: 'budget_spent', color: '#10b981', name: 'Budget Spent' }
+                ]}
+                showGrid={true}
+                showLegend={true}
+              />
+
+          {/* Portfolio Health Gauge */}
+          {data.portfolio_health && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Portfolio Health</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="relative inline-flex items-center justify-center">
+                    <div className="text-4xl font-bold text-gray-900">
+                      {data.portfolio_health.overall_health.toFixed(1)}
+                  <p className="text-sm text-gray-600 mt-2">Overall Health Score</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    data.portfolio_health.health_status === 'excellent' ? 'bg-green-100 text-green-800' :
+                    data.portfolio_health.health_status === 'good' ? 'bg-blue-100 text-blue-800' :
+                    data.portfolio_health.health_status === 'fair' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {data.portfolio_health.health_status}
+                  </span>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Budget Health</span>
+                    <span className="text-sm font-medium">{data.portfolio_health.budget_health}%</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Timeline Health</span>
+                    <span className="text-sm font-medium">{data.portfolio_health.timeline_health}%</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Resource Health</span>
+                    <span className="text-sm font-medium">{data.portfolio_health.resource_health}%</span>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Risk Health</span>
+                    <span className="text-sm font-medium">{data.portfolio_health.risk_health}%</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Quality Health</span>
+                    <span className="text-sm font-medium">{data.portfolio_health.quality_health}%</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Trend</span>
+                    <span className={`text-sm font-medium ${
+                      data.portfolio_health.trend_direction === 'improving' ? 'text-green-600' :
+                      data.portfolio_health.trend_direction === 'declining' ? 'text-red-600' :
+                      'text-gray-600'
+                    }`}>
+                      {data.portfolio_health.trend_direction}
+                    </span>
+          )}
+
+          {/* Financial Forecast */}
+          {data.financial_forecast && data.financial_forecast.length > 0 && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Financial Forecast</h3>
+              <AnalyticsChart
+                type="area"
+                data={data.financial_forecast.map(item => ({
+                  ...item,
+                  period: new Date(item.period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                }))}
+                height={300}
+                xAxisKey="period"
+                areas={[
+                  { key: 'revenue_forecast', color: '#10b981', name: 'Revenue Forecast' },
+                  { key: 'expense_forecast', color: '#ef4444', name: 'Expense Forecast' },
+                  { key: 'profit_forecast', color: '#3b82f6', name: 'Profit Forecast' }
+                ]}
+                showGrid={true}
+                showLegend={true}
+              />
+          )}
+
+          {/* Tabs */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="border-b border-gray-200">
+              <nav className="flex -mb-px flex-wrap">
+                {['overview', 'projects', 'budget', 'departments', 'resources', 'productivity', 'performance', 'predictions'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`py-4 px-6 text-sm font-medium border-b-2 whitespace-nowrap ${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </nav>
+
+            <div className="p-6">
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Project Status Summary</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Active Projects</span>
+                          <span className="text-sm font-medium text-gray-900">{data.overview.active_projects}</span>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Completed Projects</span>
+                          <span className="text-sm font-medium text-gray-900">{data.overview.completed_projects}</span>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Employees</span>
+                          <span className="text-sm font-medium text-gray-900">{data.overview.total_employees}</span>
+
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Financial Summary</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Budget</span>
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(data.overview.total_budget)}</span>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Spent</span>
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(data.overview.total_spent)}</span>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Remaining Budget</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {formatCurrency(data.overview.total_budget - data.overview.total_spent)}
+                          </span>
+              )}
+
+              {activeTab === 'projects' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Project Trends</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Started</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Completed</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Change</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {data.project_trends.map((trend, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trend.month}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trend.projects_started}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trend.projects_completed}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`font-medium ${
+                                trend.projects_started - trend.projects_completed >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {trend.projects_started - trend.projects_completed >= 0 ? '+' : ''}{trend.projects_started - trend.projects_completed}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+              )}
+
+              {activeTab === 'budget' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Budget Trends</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Allocated</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Spent</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {data.budget_trends.map((trend, index) => {
+                          const utilization = trend.budget_allocated > 0 ? (trend.budget_spent / trend.budget_allocated) * 100 : 0;
+                          return (
+                            <tr key={index}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trend.month}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(trend.budget_allocated)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatCurrency(trend.budget_spent)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <div className="flex items-center">
+                                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div
+                                      className={`h-2 rounded-full ${
+                                        utilization > 90 ? 'bg-red-600' : utilization > 75 ? 'bg-yellow-600' : 'bg-green-600'
+                                      }`}
+                                      style={{ width: `${Math.min(utilization, 100)}%` }}
+                                    ></div>
+                                  <span className="font-medium text-gray-900">{formatPercentage(utilization / 100)}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+              )}
+
+              {activeTab === 'departments' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Department Performance</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget Utilization</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {data.department_performance.map((dept, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{dept.department}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dept.projects}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      dept.budget_utilization > 90 ? 'bg-red-600' : dept.budget_utilization > 75 ? 'bg-yellow-600' : 'bg-green-600'
+                                    }`}
+                                    style={{ width: `${dept.budget_utilization}%` }}
+                                  ></div>
+                                <span className="font-medium text-gray-900">{formatPercentage(dept.budget_utilization / 100)}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      dept.completion_rate >= 90 ? 'bg-green-600' : dept.completion_rate >= 75 ? 'bg-yellow-600' : 'bg-red-600'
+                                    }`}
+                                    style={{ width: `${dept.completion_rate}%` }}
+                                  ></div>
+                                <span className="font-medium text-gray-900">{formatPercentage(dept.completion_rate / 100)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+              )}
+
+              {activeTab === 'resources' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Resource Utilization</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Count</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allocated</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {data.resource_utilization.map((resource, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{resource.resource_type}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.total_count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.allocated_count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      resource.utilization_rate >= 85 ? 'bg-yellow-600' : 'bg-green-600'
+                                    }`}
+                                    style={{ width: `${resource.utilization_rate}%` }}
+                                  ></div>
+                                <span className="font-medium text-gray-900">{formatPercentage(resource.utilization_rate / 100)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+              )}
+
+              {activeTab === 'performance' && data.project_performance && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Project Performance Analytics</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Performance Radar Chart */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Performance Overview</h4>
+                      <AnalyticsChart
+                        type="radar"
+                        data={data.project_performance.map(p => ({
+                          name: p.project_name,
+                          budget: Math.abs(p.budget_variance),
+                          schedule: Math.abs(p.schedule_variance),
+                          quality: p.quality_score,
+                          risk: 100 - p.risk_score,
+                          overall: p.overall_performance
+                        }))}
+                        height={300}
+                        xAxisKey="name"
+                        lines={[
+                          { key: 'budget', color: '#3b82f6', name: 'Budget Variance' },
+                          { key: 'schedule', color: '#10b981', name: 'Schedule Variance' },
+                          { key: 'quality', color: '#f59e0b', name: 'Quality Score' },
+                          { key: 'risk', color: '#ef4444', name: 'Risk Score' },
+                          { key: 'overall', color: '#8b5cf6', name: 'Overall Performance' }
+                        ]}
+                        showGrid={true}
+                        showLegend={true}
+                      />
+                    
+                    {/* Performance Table */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Performance Details</h4>
+                      <div className="space-y-3 max-h-80 overflow-y-auto">
+                        {data.project_performance.map((project, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <h5 className="font-medium text-gray-900">{project.project_name}</h5>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                project.status === 'ahead' ? 'bg-green-100 text-green-800' :
+                                project.status === 'on_track' ? 'bg-blue-100 text-blue-800' :
+                                project.status === 'at_risk' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {project.status}
+                              </span>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-600">Budget Variance:</span>
+                                <span className={`ml-2 font-medium ${
+                                  project.budget_variance >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {project.budget_variance >= 0 ? '+' : ''}{project.budget_variance}%
+                                </span>
+                              <div>
+                                <span className="text-gray-600">Schedule Variance:</span>
+                                <span className={`ml-2 font-medium ${
+                                  project.schedule_variance >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {project.schedule_variance >= 0 ? '+' : ''}{project.schedule_variance}%
+                                </span>
+                              <div>
+                                <span className="text-gray-600">Quality Score:</span>
+                                <span className="ml-2 font-medium">{project.quality_score}</span>
+                              <div>
+                                <span className="text-gray-600">Overall Performance:</span>
+                                <span className="ml-2 font-medium">{project.overall_performance}</span>
+                        ))}
+              )}
+
+              {activeTab === 'predictions' && data.success_predictions && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Success Predictions</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Success Probability Chart */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Success Probability</h4>
+                      <AnalyticsChart
+                        type="bar"
+                        data={data.success_predictions.map(p => ({
+                          project: p.project_name,
+                          probability: p.success_probability * 100,
+                          confidence: p.confidence_score * 100
+                        }))}
+                        height={300}
+                        xAxisKey="project"
+                        bars={[
+                          { key: 'probability', color: '#10b981', name: 'Success Probability' },
+                          { key: 'confidence', color: '#3b82f6', name: 'Confidence Score' }
+                        ]}
+                        showGrid={true}
+                        showLegend={true}
+                      />
+                    
+                    {/* Predictions Details */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Prediction Details</h4>
+                      <div className="space-y-3 max-h-80 overflow-y-auto">
+                        {data.success_predictions.map((prediction, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <h5 className="font-medium text-gray-900">{prediction.project_name}</h5>
+                              <div className="text-right">
+                                <div className="text-lg font-bold text-green-600">
+                                  {(prediction.success_probability * 100).toFixed(1)}%
+                                <div className="text-xs text-gray-500">Success Rate</div>
+                            
+                            <div className="mb-2">
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600">Confidence Score</span>
+                                <span className="font-medium">{(prediction.confidence_score * 100).toFixed(1)}%</span>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full"
+                                  style={{ width: `${prediction.confidence_score * 100}%` }}
+                                ></div>
+                            
+                            <div className="text-sm text-gray-600 mb-1">
+                              <span className="font-medium">Predicted Completion:</span> {formatDate(prediction.predicted_completion_date)}
+                            
+                            {prediction.key_factors.length > 0 && (
+                              <div className="text-sm">
+                                <span className="font-medium text-gray-600">Key Factors:</span>
+                                <ul className="mt-1 ml-4 list-disc text-gray-600">
+                                  {prediction.key_factors.slice(0, 2).map((factor, idx) => (
+                                    <li key={idx} className="text-xs">{factor}</li>
+                                  ))}
+                                </ul>
+                            )}
+                        ))}
+              )}
+
+              {activeTab === 'productivity' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Employee Productivity</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Completed</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours Worked</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency Score</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {data.employee_productivity.map((employee, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.employee}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.projects_completed}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.hours_worked}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      employee.efficiency_score >= 90 ? 'bg-green-600' : employee.efficiency_score >= 80 ? 'bg-yellow-600' : 'bg-red-600'
+                                    }`}
+                                    style={{ width: `${employee.efficiency_score}%` }}
+                                  ></div>
+                                </div>
+                                <span className="font-medium text-gray-900">{formatPercentage(employee.efficiency_score / 100)}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,404 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Layout } from '@/components/layout/Layout';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { projectsAPI } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import {
+  FolderIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  CalendarIcon,
+  UserIcon,
+  EllipsisVerticalIcon,
+  ClockIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline';
+import { formatDate, formatCurrency, getStatusColor, getPriorityColor } from '@/lib/utils';
+import Link from 'next/link';
+
+interface Project {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  budget?: string;
+  actual_cost?: string;
+  start_date?: string;
+  end_date?: string;
+  actual_start_date?: string;
+  actual_end_date?: string;
+  progress: number;
+  status: string;
+  priority: string;
+  health_score?: number;
+  roi?: number;
+  created_at: string;
+  updated_at: string;
+  category_name?: string;
+  department_name?: string;
+  manager_name?: string;
+  created_by_name?: string;
+  phases?: any[];
+  documents?: any[];
+}
+
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const response = await projectsAPI.getProjects();
+        setProjects(response.data.results || response.data);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        // Fallback to mock data if API fails
+        const mockProjects: Project[] = [
+          {
+            id: '1',
+            name: 'E-commerce Platform',
+            code: 'ECOM-001',
+            description: 'Full-stack e-commerce solution with modern UI/UX',
+            budget: '150000.00',
+            actual_cost: '75000.00',
+            start_date: '2024-01-01',
+            end_date: '2024-03-31',
+            actual_start_date: '2024-01-01',
+            progress: 65,
+            status: 'active',
+            priority: 'high',
+            health_score: 85,
+            roi: 125.5,
+            created_at: '2023-12-15T10:00:00Z',
+            updated_at: '2024-01-01T09:00:00Z',
+            category_name: 'Web Development',
+            department_name: 'Engineering',
+            manager_name: 'John Doe',
+            created_by_name: 'Sarah Wilson',
+          },
+          {
+            id: '2',
+            name: 'Mobile App Redesign',
+            code: 'MOB-002',
+            description: 'Complete redesign of the mobile application',
+            budget: '80000.00',
+            actual_cost: '32000.00',
+            start_date: '2024-01-15',
+            end_date: '2024-04-30',
+            progress: 40,
+            status: 'active',
+            priority: 'medium',
+            health_score: 78,
+            roi: 95.2,
+            created_at: '2024-01-10T11:00:00Z',
+            updated_at: '2024-01-15T08:30:00Z',
+            category_name: 'Mobile Development',
+            department_name: 'Engineering',
+            manager_name: 'Jane Smith',
+            created_by_name: 'Sarah Wilson',
+          },
+          {
+            id: '3',
+            name: 'Data Analytics Dashboard',
+            code: 'DATA-003',
+            description: 'Real-time analytics dashboard for business metrics',
+            budget: '120000.00',
+            actual_cost: '18000.00',
+            start_date: '2024-02-01',
+            end_date: '2024-05-31',
+            progress: 15,
+            status: 'planning',
+            priority: 'high',
+            health_score: 92,
+            roi: 150.8,
+            created_at: '2024-01-20T14:00:00Z',
+            updated_at: '2024-01-25T10:15:00Z',
+            category_name: 'Data Science',
+            department_name: 'Analytics',
+            manager_name: 'Mike Johnson',
+            created_by_name: 'Sarah Wilson',
+          },
+          {
+            id: '4',
+            name: 'API Integration Service',
+            code: 'API-004',
+            description: 'RESTful API service for third-party integrations',
+            budget: '60000.00',
+            actual_cost: '60000.00',
+            start_date: '2023-11-01',
+            end_date: '2024-01-15',
+            actual_start_date: '2023-11-01',
+            actual_end_date: '2024-01-15',
+            progress: 100,
+            status: 'completed',
+            priority: 'low',
+            health_score: 95,
+            roi: 110.3,
+            created_at: '2023-10-25T16:00:00Z',
+            updated_at: '2024-01-15T17:30:00Z',
+            category_name: 'Backend Development',
+            department_name: 'Engineering',
+            manager_name: 'Sarah Wilson',
+            created_by_name: 'Mike Johnson',
+          },
+          {
+            id: '5',
+            name: 'Customer Portal',
+            code: 'CUST-005',
+            description: 'Self-service portal for customer management',
+            budget: '95000.00',
+            actual_cost: '71250.00',
+            start_date: '2024-01-10',
+            end_date: '2024-03-20',
+            actual_start_date: '2024-01-10',
+            progress: 75,
+            status: 'active',
+            priority: 'medium',
+            health_score: 88,
+            roi: 118.7,
+            created_at: '2024-01-05T09:00:00Z',
+            updated_at: '2024-01-22T11:45:00Z',
+            category_name: 'Web Development',
+            department_name: 'Engineering',
+            manager_name: 'Tom Brown',
+            created_by_name: 'Mike Johnson',
+          },
+        ];
+
+        setProjects(mockProjects);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  // Validate project ID format (UUID)
+  const isValidUUID = (id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name.toLowerCase().includes(search.toLowerCase()) ||
+                         (project.description?.toLowerCase().includes(search.toLowerCase()) || '');
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || (project.category_name === categoryFilter);
+    const hasValidId = project.id && isValidUUID(project.id);
+
+    return matchesSearch && matchesStatus && matchesCategory && hasValidId;
+  });
+
+  const categories = [...new Set(projects.map(p => p.category_name).filter(Boolean))];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <Layout>
+        <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
+          <p className="text-gray-600">Manage and track all your projects</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Link href="/projects/categories">
+            <Button variant="outline" className="flex items-center">
+              <FolderIcon className="h-4 w-4 mr-2" />
+              Categories
+            </Button>
+          </Link>
+          <Link href="/projects/phases">
+            <Button variant="outline" className="flex items-center">
+              <ClockIcon className="h-4 w-4 mr-2" />
+              Phases
+            </Button>
+          </Link>
+          <Link href="/projects/documents">
+            <Button variant="outline" className="flex items-center">
+              <DocumentTextIcon className="h-4 w-4 mr-2" />
+              Documents
+            </Button>
+          </Link>
+          <Link href="/projects/create">
+            <Button className="flex items-center">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Projects
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Search projects..."
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending Approval</option>
+              <option value="approved">Approved</option>
+              <option value="planning">Planning</option>
+              <option value="in_progress">In Progress</option>
+              <option value="on_hold">On Hold</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProjects.map((project) => (
+          <div key={project.id} className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 bg-blue-100 rounded-lg p-2">
+                    <FolderIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-medium text-gray-900">{project.name}</h3>
+                    <p className="text-sm text-gray-500">{project.category_name || 'Uncategorized'}</p>
+                  </div>
+                </div>
+                <button className="text-gray-400 hover:text-gray-600">
+                  <EllipsisVerticalIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                {project.description || 'No description available'}
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+                    {project.status.replace('_', ' ')}
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}>
+                    {project.priority}
+                  </span>
+                </div>
+
+                <div className="flex items-center text-sm text-gray-500">
+                  <UserIcon className="h-4 w-4 mr-1" />
+                  {project.manager_name || 'Unassigned'}
+                </div>
+
+                <div className="flex items-center text-sm text-gray-500">
+                  <CalendarIcon className="h-4 w-4 mr-1" />
+                  {project.end_date ? formatDate(project.end_date) : 'No end date'}
+                </div>
+
+                {project.budget && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="font-medium">Budget: {formatCurrency(parseFloat(project.budget))}</span>
+                  </div>
+                )}
+
+                {project.health_score && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="font-medium">Health: {project.health_score}%</span>
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-600">Progress</span>
+                    <span className="font-medium">{project.progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${project.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <Link href={`/projects/${project.id}`}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    View Details
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-12">
+          <FolderIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Try adjusting your search or filter criteria
+          </p>
+        </div>
+      )}
+        </div>
+      </Layout>
+    </ProtectedRoute>
+  );
+}
