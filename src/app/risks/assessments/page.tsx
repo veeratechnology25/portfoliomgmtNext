@@ -30,6 +30,7 @@ interface ApiRiskAssessment {
   assessment_date: string;
   status: string;
   priority: string;
+  approved_by?: string;
 
   likelihood_score: number;
   likelihood_justification: string;
@@ -45,12 +46,8 @@ interface ApiRiskAssessment {
 
   approval_date?: string | null;
   approval_notes?: string | null;
-  assessor?: any;
-  approved_by?: any;
-
-  created_at?: string;
-  updated_at?: string;
-}
+  assessor?: string | null;
+};
 
 interface RiskAssessmentVM {
   id: string;
@@ -59,6 +56,7 @@ interface RiskAssessmentVM {
   assessor: string;
   assessment_date: string;
   status: string;
+    review_date?: string;
   risk_score: number;
   impact_level: string;
   probability_level: string;
@@ -71,7 +69,9 @@ interface RiskAssessmentVM {
 }
 
 export default function RiskAssessmentsPage() {
-  const [assessments, setAssessments] = useState<ApiRiskAssessment[]>([]);
+  // const [assessments, setAssessments] = useState<ApiRiskAssessment[]>([]);
+  const [assessments, setAssessments] = useState<RiskAssessmentVM[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -146,17 +146,21 @@ const mapAssessmentToVM = (a: ApiRiskAssessment): RiskAssessmentVM => {
   };
 };
 
-  const fetchAssessments = async () => {
-    try {
-      setLoading(true);
-      console.log('Fetching risk assessments...');
-      const response = await risksAPI.getRiskAssessments();
-const list = response.data?.results ?? response.data;
-const apiItems: ApiRiskAssessment[] = Array.isArray(list) ? list : [];
-setAssessments(apiItems.map(mapAssessmentToVM));
+const normalizeList = (data: any): ApiRiskAssessment[] => {
+  const list = data?.results ?? data;
+  if (Array.isArray(list)) return list as ApiRiskAssessment[];
+  return [];
+};
 
-      // setAssessments(response.data.results || response.data);
-    } catch (error: any) {
+const fetchAssessments = async () => {
+  try {
+    setLoading(true);
+
+    const response = await risksAPI.getRiskAssessments();
+    const apiItems = normalizeList(response.data);
+
+    setAssessments(apiItems.map(mapAssessmentToVM));
+  } catch (error: any) {
       console.error('Failed to fetch risk assessments:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
       
@@ -170,7 +174,130 @@ setAssessments(apiItems.map(mapAssessmentToVM));
       
       // Fallback to mock data if API fails
       console.log('Using fallback mock data...');
-      const mockAssessments: ApiRiskAssessment[] = [
+      // const mockAssessments: ApiRiskAssessment[] = [
+      //   {
+      //     id: '1',
+      //     risk_title: 'Data Security Breach Risk',
+      //     risk_description: 'Potential unauthorized access to sensitive customer data through cyber attacks',
+      //     assessor: 'John Smith',
+      //     assessment_date: '2024-12-20T10:00:00Z',
+      //     review_date: '2024-12-20T14:30:00Z',
+      //     status: 'approved',
+      //     risk_score: 85,
+      //     impact_level: 'high',
+      //     probability_level: 'medium',
+      //     risk_level: 'high',
+      //     mitigation_status: 'in_progress',
+      //     recommended_actions: [
+      //       'Implement multi-factor authentication',
+      //       'Conduct security audit',
+      //       'Update firewall configurations'
+      //     ],
+      //     
+      //     
+      //     approved_by: 'Sarah Johnson',
+      //     approved_date: '2024-12-20T14:30:00Z',
+      //     next_review_date: '2025-01-20',
+      //   },
+      //   {
+      //     id: '2',
+      //     risk_title: 'Project Timeline Delay',
+      //     risk_description: 'Risk of missing critical project deadlines due to resource constraints',
+      //     assessor: 'Sarah Johnson',
+      //     assessment_date: '2024-12-19T15:30:00Z',
+      //     status: 'pending',
+      //     risk_score: 65,
+      //     impact_level: 'medium',
+      //     probability_level: 'medium',
+      //     risk_level: 'medium',
+      //     mitigation_status: 'not_started',
+      //     recommended_actions: [
+      //       'Allocate additional resources',
+      //       'Reprioritize project tasks',
+      //       'Extend project timeline'
+      //     ],
+      //     
+      //     
+      //     next_review_date: '2025-01-19',
+      //   },
+      //   {
+      //     id: '3',
+      //     risk_title: 'Budget Overrun Risk',
+      //     risk_description: 'Potential exceedance of project budget due to unforeseen expenses',
+      //     assessor: 'Mike Davis',
+      //     assessment_date: '2024-12-18T09:15:00Z',
+      //     review_date: '2024-12-18T11:00:00Z',
+      //     status: 'approved',
+      //     risk_score: 78,
+      //     impact_level: 'high',
+      //     probability_level: 'medium',
+      //     risk_level: 'high',
+      //     mitigation_status: 'completed',
+      //     recommended_actions: [
+      //       'Implement cost control measures',
+      //       'Regular budget reviews',
+      //       'Contingency fund allocation'
+      //     ],
+      //     
+      //     
+      //     approved_by: 'David Wilson',
+      //     approved_date: '2024-12-18T11:00:00Z',
+      //     next_review_date: '2025-01-18',
+      //   },
+      //   {
+      //     id: '4',
+      //     risk_title: 'Resource Shortage',
+      //     risk_description: 'Insufficient skilled personnel for critical project phases',
+      //     assessor: 'Emily Chen',
+      //     assessment_date: '2024-12-17T13:45:00Z',
+      //     status: 'pending',
+      //     risk_score: 55,
+      //     impact_level: 'medium',
+      //     probability_level: 'low',
+      //     risk_level: 'medium',
+      //     mitigation_status: 'in_progress',
+      //     recommended_actions: [
+      //       'Hire additional staff',
+      //       'Cross-train existing team',
+      //       'Outsource non-critical tasks'
+      //     ],
+      //     
+      //     
+      //     next_review_date: '2025-01-17',
+      //   },
+      //   {
+      //     id: '5',
+      //     risk_title: 'Regulatory Compliance',
+      //     risk_description: 'Risk of non-compliance with new industry regulations',
+      //     assessor: 'David Wilson',
+      //     assessment_date: '2024-12-16T11:20:00Z',
+      //     review_date: '2024-12-16T14:00:00Z',
+      //     status: 'approved',
+      //     risk_score: 42,
+      //     impact_level: 'low',
+      //     probability_level: 'low',
+      //     risk_level: 'low',
+      //     mitigation_status: 'completed',
+      //     recommended_actions: [
+      //       'Review compliance requirements',
+      //       'Update internal policies',
+      //       'Conduct compliance training'
+      //     ],
+      //     
+      //     
+      //     approved_by: 'Lisa Anderson',
+      //     approved_date: '2024-12-16T14:00:00Z',
+      //     next_review_date: '2025-01-16',
+      //   },
+      // ];
+
+      // setAssessments(mockAssessments);
+   
+    console.error('Failed to fetch risk assessments:', error);
+
+    // keep your toasts...
+
+    const mockAssessments: RiskAssessmentVM[] = [ 
         {
           id: '1',
           risk_title: 'Data Security Breach Risk',
@@ -189,8 +316,8 @@ setAssessments(apiItems.map(mapAssessmentToVM));
             'Conduct security audit',
             'Update firewall configurations'
           ],
-          created_at: '2024-12-20T10:00:00Z',
-          updated_at: '2024-12-20T14:30:00Z',
+          
+          
           approved_by: 'Sarah Johnson',
           approved_date: '2024-12-20T14:30:00Z',
           next_review_date: '2025-01-20',
@@ -212,8 +339,8 @@ setAssessments(apiItems.map(mapAssessmentToVM));
             'Reprioritize project tasks',
             'Extend project timeline'
           ],
-          created_at: '2024-12-19T15:30:00Z',
-          updated_at: '2024-12-19T15:30:00Z',
+          
+          
           next_review_date: '2025-01-19',
         },
         {
@@ -234,8 +361,8 @@ setAssessments(apiItems.map(mapAssessmentToVM));
             'Regular budget reviews',
             'Contingency fund allocation'
           ],
-          created_at: '2024-12-18T09:15:00Z',
-          updated_at: '2024-12-18T11:00:00Z',
+          
+          
           approved_by: 'David Wilson',
           approved_date: '2024-12-18T11:00:00Z',
           next_review_date: '2025-01-18',
@@ -257,8 +384,8 @@ setAssessments(apiItems.map(mapAssessmentToVM));
             'Cross-train existing team',
             'Outsource non-critical tasks'
           ],
-          created_at: '2024-12-17T13:45:00Z',
-          updated_at: '2024-12-17T13:45:00Z',
+          
+          
           next_review_date: '2025-01-17',
         },
         {
@@ -279,31 +406,35 @@ setAssessments(apiItems.map(mapAssessmentToVM));
             'Update internal policies',
             'Conduct compliance training'
           ],
-          created_at: '2024-12-16T11:20:00Z',
-          updated_at: '2024-12-16T14:00:00Z',
+          
+          
           approved_by: 'Lisa Anderson',
           approved_date: '2024-12-16T14:00:00Z',
           next_review_date: '2025-01-16',
         },
       ];
 
-      setAssessments(mockAssessments);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setAssessments(mockAssessments);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleApproveAssessment = async (id: string) => {
-    try {
-      console.log('Approving assessment:', id);
-      await risksAPI.approveRiskAssessment(id);
-      toast.success('Risk assessment approved successfully');
-      fetchAssessments();
-    } catch (error: any) {
-      console.error('Failed to approve assessment:', error);
-      toast.error('Failed to approve assessment');
-    }
-  };
+
+const handleApproveAssessment = async (id: string) => {
+  try {
+    await risksAPI.approveRiskAssessment(id);
+    toast.success('Risk assessment approved successfully');
+
+    setAssessments(prev =>
+      prev.map(a => a.id === id ? { ...a, status: 'approved' } : a)
+    );
+  } catch (error: any) {
+    console.error('Failed to approve assessment:', error);
+    toast.error('Failed to approve assessment');
+  }
+};
+
 
   const filteredAssessments = assessments.filter((assessment) => {
     const matchesSearch = 
