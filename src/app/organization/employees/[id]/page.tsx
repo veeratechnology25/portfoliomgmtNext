@@ -5,6 +5,8 @@ import { Layout } from '@/components/layout/Layout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { organizationAPI } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
+
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -27,12 +29,9 @@ interface Employee {
   last_name: string;
   email: string;
   phone?: string;
-  role: string;
-  department?: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  role?: string;
+  department?: { id: string; name?: string; code?: string };
+  department_name?: string;
   position?: string;
   hire_date?: string;
   salary?: string;
@@ -40,6 +39,7 @@ interface Employee {
   created_at: string;
   updated_at: string;
 }
+
 
 interface Skill {
   id: string;
@@ -59,23 +59,53 @@ interface EmployeeSkill {
   created_at: string;
 }
 
-export default function EmployeeDetailPage({ params }: { params: { id: string } }) {
+// ...your imports
+
+export default function EmployeeDetailPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [employeeSkills, setEmployeeSkills] = useState<EmployeeSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
-  }, [params.id]);
+    if (!id) return;            // ✅ prevents calling API with undefined
+    fetchData(id);
+  }, [id]);
 
-  const fetchData = async () => {
+  const fetchData = async (employeeId: string) => {
     try {
       setLoading(true);
-      
-      // Fetch employee details
-      const employeeResponse = await organizationAPI.getEmployee(params.id);
-      setEmployee(employeeResponse.data);
-      
+
+      const employeeResponse = await organizationAPI.getEmployee(employeeId);
+     const e = employeeResponse.data;
+
+      // if your getEmployee endpoint returns {results:[...]} sometimes:
+      const item = e?.results?.[0] ?? e;
+
+      const normalized: Employee = {
+        id: item.employee_id ?? item.id ?? params.id,
+        first_name: item.first_name ?? item.user?.first_name ?? '',
+        last_name: item.last_name ?? item.user?.last_name ?? '',
+        email: item.email ?? item.user?.email ?? '',
+        phone: item.phone ?? item.user?.phone ?? '',
+        role: item.role ?? item.user?.role ?? '',
+        position: item.position ?? item.job_title ?? '',
+        hire_date: item.hire_date ?? '',
+        salary: item.salary ?? '',
+        status: item.status ?? (item.is_active ? 'active' : 'inactive'),
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+
+        // API gives department as UUID string; keep it as {id} so your links work
+        department: item.department ? { id: item.department } : undefined,
+        department_name: item.department_name ?? '',
+      };
+
+      setEmployee(normalized);
+
+
       // Fetch employee skills
       const skillsResponse = await organizationAPI.getEmployeeSkills({ employee: params.id });
       setEmployeeSkills(skillsResponse.data.results || skillsResponse.data);
@@ -237,14 +267,14 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                 <div className="flex items-center">
                   <BuildingOfficeIcon className="h-4 w-4 text-gray-400 mr-2" />
                   {employee.department ? (
-                    <Link 
+                    <Link
                       href={`/organization/departments/${employee.department.id}`}
                       className="text-blue-600 hover:text-blue-800"
                     >
-                      {employee.department.name} ({employee.department.code})
+                      {employee.department_name || 'View Department'}
                     </Link>
                   ) : (
-                    <span className="text-gray-900">Not assigned</span>
+                    <span className="text-gray-900">{employee.department_name || 'Not assigned'}</span>
                   )}
                 </div>
               </div>
@@ -286,7 +316,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                 <Button variant="outline" size="sm">Manage Skills</Button>
               </Link>
             </div>
-            
+
             {employeeSkills.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {employeeSkills.map((skill) => (

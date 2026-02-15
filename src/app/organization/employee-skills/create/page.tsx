@@ -46,7 +46,7 @@ export default function CreateEmployeeSkillPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  
+
   const [formData, setFormData] = useState<EmployeeSkillFormData>({
     employee: '',
     skill: '',
@@ -69,8 +69,20 @@ export default function CreateEmployeeSkillPage() {
         organizationAPI.getEmployees(),
         organizationAPI.getSkills()
       ]);
-      
-      setEmployees(employeesResponse.data.results || employeesResponse.data);
+
+      const list = employeesResponse.data.results || employeesResponse.data;
+
+      const normalizedEmployees: Employee[] = (list || []).map((e: any) => ({
+        id: e.employee_id ?? e.id,                  // ✅ important
+        first_name: e.first_name ?? e.user?.first_name ?? '',
+        last_name: e.last_name ?? e.user?.last_name ?? '',
+        email: e.email ?? e.user?.email ?? '',
+      }));
+
+      setEmployees(normalizedEmployees);
+
+
+      // setEmployees(employeesResponse.data.results || employeesResponse.data);
       setSkills(skillsResponse.data.results || skillsResponse.data);
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -80,7 +92,7 @@ export default function CreateEmployeeSkillPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'skill') {
       const skill = skills.find(s => s.id === value);
       setSelectedSkill(skill || null);
@@ -96,7 +108,7 @@ export default function CreateEmployeeSkillPage() {
         [name]: value
       }));
     }
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -105,7 +117,7 @@ export default function CreateEmployeeSkillPage() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.employee) newErrors.employee = 'Employee is required';
     if (!formData.skill) newErrors.skill = 'Skill is required';
     if (!formData.proficiency_level) newErrors.proficiency_level = 'Proficiency level is required';
@@ -119,7 +131,7 @@ export default function CreateEmployeeSkillPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -180,9 +192,8 @@ export default function CreateEmployeeSkillPage() {
                     name="employee"
                     value={formData.employee}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.employee ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.employee ? 'border-red-300' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Employee</option>
                     {employees.map((employee) => (
@@ -202,9 +213,8 @@ export default function CreateEmployeeSkillPage() {
                     name="skill"
                     value={formData.skill}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.skill ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.skill ? 'border-red-300' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Skill</option>
                     {skills.map((skill) => (
@@ -225,9 +235,8 @@ export default function CreateEmployeeSkillPage() {
                     value={formData.proficiency_level}
                     onChange={handleInputChange}
                     disabled={!selectedSkill}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.proficiency_level ? 'border-red-300' : 'border-gray-300'
-                    } ${!selectedSkill ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.proficiency_level ? 'border-red-300' : 'border-gray-300'
+                      } ${!selectedSkill ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   >
                     <option value="">Select Proficiency Level</option>
                     {getAvailableProficiencyLevels().map((level) => (
@@ -253,9 +262,8 @@ export default function CreateEmployeeSkillPage() {
                     onChange={handleInputChange}
                     step="0.5"
                     min="0"
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.years_of_experience ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.years_of_experience ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Enter years of experience"
                   />
                   {errors.years_of_experience && <p className="mt-1 text-sm text-red-600">{errors.years_of_experience}</p>}

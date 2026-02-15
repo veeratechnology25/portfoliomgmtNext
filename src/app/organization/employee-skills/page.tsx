@@ -21,17 +21,25 @@ import toast from 'react-hot-toast';
 
 interface EmployeeSkill {
   id: string;
-  employee: string;
-  employee_name: string;
-  employee_email: string;
-  skill: string;
+  employee: string;          // employee UUID
+  skill: string;             // skill UUID
   skill_name: string;
-  proficiency_level: string;
+  skill_category?: string;
+  level: number;             // 1-4
+  verified: boolean;
+  verified_date?: string | null;
+  created_at: string;
+
+  // UI-enriched fields (we will add)
+  employee_name?: string;
+  employee_email?: string;
+  proficiency_level: string; // derived from level
+
   years_of_experience?: number;
   certification_details?: string;
-  created_at: string;
   updated_at: string;
 }
+
 
 interface Employee {
   id: string;
@@ -60,28 +68,77 @@ export default function EmployeeSkillsPage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch employee skills
-      const employeeSkillsResponse = await organizationAPI.getEmployeeSkills();
-      setEmployeeSkills(employeeSkillsResponse.data.results || employeeSkillsResponse.data);
-      
-      // Fetch employees for filtering
-      const employeesResponse = await organizationAPI.getEmployees();
-      setEmployees(employeesResponse.data.results || employeesResponse.data);
-      
-      // Fetch skills for filtering
-      const skillsResponse = await organizationAPI.getSkills();
-      setSkills(skillsResponse.data.results || skillsResponse.data);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      toast.error('Failed to load employee skills');
-    } finally {
-      setLoading(false);
-    }
-  };
+const levelToName = (level: number) => {
+  switch (level) {
+    case 1: return 'beginner';
+    case 2: return 'intermediate';
+    case 3: return 'advanced';
+    case 4: return 'expert';
+    default: return 'beginner';
+  }
+};
+
+const fetchData = async () => {
+  try {
+    setLoading(true);
+
+    const [employeeSkillsResponse, employeesResponse, skillsResponse] = await Promise.all([
+      organizationAPI.getEmployeeSkills(),
+      organizationAPI.getEmployees(),
+      organizationAPI.getSkills(),
+    ]);
+
+    const esList = employeeSkillsResponse.data.results || employeeSkillsResponse.data;
+    const empList = employeesResponse.data.results || employeesResponse.data;
+    const skillsList = skillsResponse.data.results || skillsResponse.data;
+
+    // ✅ normalize employees: employee_id -> id
+    const normalizedEmployees: Employee[] = (empList || []).map((e: any) => ({
+      id: e.employee_id ?? e.id,
+      first_name: e.first_name ?? e.user?.first_name ?? '',
+      last_name: e.last_name ?? e.user?.last_name ?? '',
+      email: e.email ?? e.user?.email ?? '',
+    }));
+    setEmployees(normalizedEmployees);
+
+    setSkills(skillsList || []);
+
+    // map employee_id -> employee info
+    const empMap = new Map(
+      normalizedEmployees.map((e) => [
+        e.id,
+        { name: `${e.first_name} ${e.last_name}`.trim(), email: e.email },
+      ])
+    );
+
+    // ✅ enrich employee-skills so your UI fields exist
+    const normalizedES: EmployeeSkill[] = (esList || []).map((es: any) => {
+      const emp = empMap.get(es.employee);
+      return {
+        id: es.id,
+        employee: es.employee,
+        skill: es.skill,
+        skill_name: es.skill_name,
+        skill_category: es.skill_category,
+        level: es.level,
+        verified: es.verified,
+        verified_date: es.verified_date,
+        created_at: es.created_at,
+        employee_name: emp?.name || 'Unknown employee',
+        employee_email: emp?.email || '',
+        proficiency_level: levelToName(es.level),
+      };
+    });
+
+    setEmployeeSkills(normalizedES);
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    toast.error('Failed to load employee skills');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this employee skill assignment?')) {
@@ -98,18 +155,22 @@ export default function EmployeeSkillsPage() {
     }
   };
 
-  const filteredEmployeeSkills = employeeSkills.filter((employeeSkill) => {
-    const matchesSearch = 
-      employeeSkill.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-      employeeSkill.skill_name.toLowerCase().includes(search.toLowerCase()) ||
-      employeeSkill.proficiency_level.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesEmployee = employeeFilter === 'all' || employeeSkill.employee === employeeFilter;
-    const matchesSkill = skillFilter === 'all' || employeeSkill.skill === skillFilter;
-    const matchesProficiency = proficiencyFilter === 'all' || employeeSkill.proficiency_level === proficiencyFilter;
+const q = search.toLowerCase();
 
-    return matchesSearch && matchesEmployee && matchesSkill && matchesProficiency;
-  });
+const filteredEmployeeSkills = employeeSkills.filter((es) => {
+  const matchesSearch =
+    (es.employee_name ?? '').toLowerCase().includes(q) ||
+    (es.skill_name ?? '').toLowerCase().includes(q) ||
+    (es.proficiency_level ?? '').toLowerCase().includes(q);
+
+  const matchesEmployee = employeeFilter === 'all' || es.employee === employeeFilter;
+  const matchesSkill = skillFilter === 'all' || es.skill === skillFilter;
+  const matchesProficiency =
+    proficiencyFilter === 'all' || es.proficiency_level === proficiencyFilter;
+
+  return matchesSearch && matchesEmployee && matchesSkill && matchesProficiency;
+});
+
 
   const proficiencyLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
 

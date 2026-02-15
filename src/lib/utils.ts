@@ -85,9 +85,9 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-export function capitalizeFirstLetter(string: string): string {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
+// export function capitalizeFirstLetter(string: string): string {
+//   return string.charAt(0).toUpperCase() + string.slice(1);
+// }
 
 export function getInitials(name: string): string {
   return name
@@ -121,7 +121,14 @@ export function getPriorityColor(priority: string): string {
   return colors[priority.toLowerCase()] || 'bg-gray-100 text-gray-800';
 }
 
-export function getRoleDisplayName(role: string): string {
+export function capitalizeFirstLetter(value?: string | null): string {
+  const s = (value ?? '').trim();
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+
+export function getRoleDisplayName(role?: string | null): string {
   const roleNames: Record<string, string> = {
     admin: 'System Administrator',
     manager: 'Department Manager',
@@ -131,8 +138,13 @@ export function getRoleDisplayName(role: string): string {
     finance: 'Finance Department',
     hr: 'HR Department',
   };
-  return roleNames[role] || capitalizeFirstLetter(role);
+
+  const normalized = (role ?? '').trim().toLowerCase();
+  if (!normalized) return 'No role';
+
+  return roleNames[normalized] ?? capitalizeFirstLetter(normalized);
 }
+
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';

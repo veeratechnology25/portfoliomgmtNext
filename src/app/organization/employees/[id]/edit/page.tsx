@@ -6,7 +6,8 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { organizationAPI } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -42,12 +43,9 @@ interface Employee {
   last_name: string;
   email: string;
   phone?: string;
-  role: string;
-  department?: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  role?: string;
+  department?: { id: string; name?: string; code?: string };
+  department_name?: string;
   position?: string;
   hire_date?: string;
   salary?: string;
@@ -56,19 +54,24 @@ interface Employee {
   updated_at: string;
 }
 
+
 interface Department {
   id: string;
   name: string;
   code: string;
 }
 
-export default function EditEmployeePage({ params }: { params: { id: string } }) {
-  const router = useRouter();
+export default function EditEmployeePage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
-  
+
+
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+
   const [formData, setFormData] = useState<EmployeeFormData>({
     first_name: '',
     last_name: '',
@@ -100,33 +103,56 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
   ];
 
   useEffect(() => {
-    fetchData();
-  }, [params.id]);
+    if (!id) return;
+    fetchData(id);
+  }, [id]);
 
-  const fetchData = async () => {
+  const fetchData = async (employeeId: string) => {
     try {
       setInitialLoading(true);
-      
-      // Fetch employee details
-      const employeeResponse = await organizationAPI.getEmployee(params.id);
-      const empData = employeeResponse.data;
-      setEmployee(empData);
-      
-      // Set form data
+
+      const employeeResponse = await organizationAPI.getEmployee(employeeId);
+      const raw = employeeResponse.data;
+      const empData = raw?.results?.[0] ?? raw;
+
+      // ✅ normalize to your form shape
+      const normalized = {
+        id: empData.employee_id ?? empData.id ?? employeeId,
+        first_name: empData.first_name ?? empData.user?.first_name ?? '',
+        last_name: empData.last_name ?? empData.user?.last_name ?? '',
+        email: empData.email ?? empData.user?.email ?? '',
+        phone: empData.phone ?? empData.user?.phone ?? '',
+        role: empData.role ?? empData.user?.role ?? '',
+        department: empData.department
+          ? typeof empData.department === 'string'
+            ? { id: empData.department }
+            : empData.department
+          : undefined,
+        department_name: empData.department_name ?? '',
+        
+        position: empData.position ?? empData.job_title ?? '',
+        hire_date: empData.hire_date ?? '',
+        salary: empData.salary ?? '',
+        status: empData.status ?? (empData.is_active ? 'active' : 'inactive'),
+        created_at: empData.created_at,
+        updated_at: empData.updated_at,
+      };
+
+      setEmployee(normalized);
+
       setFormData({
-        first_name: empData.first_name || '',
-        last_name: empData.last_name || '',
-        email: empData.email || '',
-        phone: empData.phone || '',
-        role: empData.role || '',
-        department: empData.department?.id || '',
-        position: empData.position || '',
-        hire_date: empData.hire_date || '',
-        salary: empData.salary || '',
-        status: empData.status || '',
+        first_name: normalized.first_name,
+        last_name: normalized.last_name,
+        email: normalized.email,
+        phone: normalized.phone || '',
+        role: normalized.role || '',
+        department: normalized.department?.id || '',
+        position: normalized.position || '',
+        hire_date: normalized.hire_date || '',
+        salary: normalized.salary || '',
+        status: normalized.status || 'active',
       });
-      
-      // Fetch departments for selection
+
       const departmentsResponse = await organizationAPI.getDepartments();
       setDepartments(departmentsResponse.data.results || departmentsResponse.data);
     } catch (error) {
@@ -137,13 +163,14 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
     }
   };
 
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -152,7 +179,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
     if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
@@ -167,20 +194,35 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
+    if (!id) return;
 
     setLoading(true);
     try {
-      const employeeData = {
-        ...formData,
+      const payload: any = {
+        // ✅ employee fields (these exist on Employee now)
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim(),
+
+        hire_date: formData.hire_date || null,
+        job_title: formData.position || null,   // ✅ map position -> job_title
         salary: formData.salary ? parseFloat(formData.salary) : null,
         department: formData.department || null,
+
+        // ✅ map status -> is_active (since your model uses is_active)
+        is_active: formData.status === 'active',
       };
 
-      await organizationAPI.updateEmployee(params.id, employeeData);
+      // ⚠️ Only include these if Employee model actually has these fields.
+      // If phone/role are only on User, sending them will error or be ignored.
+      // payload.phone = formData.phone || null;
+      // payload.role = formData.role;
+
+      await organizationAPI.updateEmployee(id, payload);
+
       toast.success('Employee updated successfully');
-      router.push(`/organization/employees/${params.id}`);
+      router.push(`/organization/employees/${id}`);
     } catch (error) {
       console.error('Failed to update employee:', error);
       toast.error('Failed to update employee');
@@ -188,6 +230,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
       setLoading(false);
     }
   };
+
 
   if (initialLoading) {
     return (
@@ -257,9 +300,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.first_name ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.first_name ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Enter first name"
                   />
                   {errors.first_name && <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>}
@@ -274,9 +316,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.last_name ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.last_name ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Enter last name"
                   />
                   {errors.last_name && <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>}
@@ -291,9 +332,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.email ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Enter email address"
                   />
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
@@ -321,9 +361,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     name="role"
                     value={formData.role}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.role ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.role ? 'border-red-300' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Role</option>
                     {roles.map((role) => (
@@ -343,9 +382,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.status ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.status ? 'border-red-300' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select Status</option>
                     {statuses.map((status) => (
@@ -414,9 +452,8 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
-                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                      errors.salary ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.salary ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Enter salary"
                   />
                   {errors.salary && <p className="mt-1 text-sm text-red-600">{errors.salary}</p>}
