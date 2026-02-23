@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosR
 import { toast } from 'react-hot-toast';
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api' || 'https://portfoliomgmt-backend.vercel.app/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://portfoliomgmt-backend.vercel.app/api';
 // || 'http://localhost:8000/api'
 
 // Create axios instance
@@ -87,7 +87,7 @@ export const handleAPIError = (error: any) => {
     // Server responded with error status
     const status = error.response.status;
     const data = error.response.data;
-    
+
     switch (status) {
       case 400:
         if (typeof data === 'object' && data) {
@@ -127,7 +127,7 @@ export const handleAPIError = (error: any) => {
 export const authAPI = {
   login: (credentials: { email: string; password: string; remember_me?: boolean }) =>
     api.post('/auth/login/', credentials),
-  
+
   register: (userData: {
     email: string;
     password: string;
@@ -137,200 +137,204 @@ export const authAPI = {
     phone?: string;
     role?: string;
   }) => api.post('/auth/register/', userData),
-  
+
   logout: () => api.post('/auth/logout/'),
-  
+
   refreshToken: (refresh: string) =>
     api.post('/auth/token/refresh/', { refresh }),
-  
+
   verifyToken: (token: string) =>
     api.post('/auth/token/verify/', { token }),
-  
+
   getUser: () => api.get('/auth/users/me/'),
-  
+
   updateProfile: (userData: any) => api.put('/auth/profile/', userData),
-  
+
   changePassword: (passwordData: {
     old_password: string;
     new_password: string;
     new_password2: string;
   }) => api.post('/auth/change-password/', passwordData),
-  
+
   getUsers: (params?: any) => api.get('/auth/users/', { params }),
-  
+
   // Login history
-  getLoginHistory: (params?: any) => 
+  getLoginHistory: (params?: any) =>
     api.get('/auth/login-history/', { params }),
-  
+
   // User management (admin only)
   createUser: (userData: any) => api.post('/auth/users/', userData),
-  
-  updateUser: (id: string, userData: any) => 
+
+  updateUser: (id: string, userData: any) =>
     api.patch(`/auth/users/${id}/`, userData),
-  
-  deactivateUser: (id: string) => 
+
+  deactivateUser: (id: string) =>
     api.patch(`/auth/users/${id}/`, { is_active: false }),
-  
-  activateUser: (id: string) => 
+
+  activateUser: (id: string) =>
     api.patch(`/auth/users/${id}/`, { is_active: true }),
 };
 
 export const resourcesAPI = {
   // Human Resources Management
   getResources: (params?: any) => api.get('/resources/', { params }),
-  
+
   getResource: (id: string) => api.get(`/resources/${id}/`),
-  
+
   createResource: (resourceData: any) => api.post('/resources/', resourceData),
-  
+
   updateResource: (id: string, resourceData: any) =>
     api.put(`/resources/${id}/`, resourceData),
-  
+
   deleteResource: (id: string) => api.delete(`/resources/${id}/`),
 
   // Resource Allocations
   getResourceAllocations: (params?: any) => api.get('/resources/allocations/', { params }),
-  
+
   getResourceAllocation: (id: string) => api.get(`/resources/allocations/${id}/`),
-  
+
   createResourceAllocation: (allocationData: any) => api.post('/resources/allocations/', allocationData),
-  
+
   updateResourceAllocation: (id: string, allocationData: any) =>
     api.put(`/resources/allocations/${id}/`, allocationData),
-  
+
   deleteResourceAllocation: (id: string) => api.delete(`/resources/allocations/${id}/`),
 
   // Project-specific allocations
-  getProjectAllocations: (projectId: string) => 
+  getProjectAllocations: (projectId: string) =>
     api.get(`/resources/allocations/?project=${projectId}`),
 
   // Employee-specific allocations
-  getEmployeeAllocations: (employeeId: string) => 
+  getEmployeeAllocations: (employeeId: string) =>
     api.get(`/resources/allocations/?employee=${employeeId}`),
 
   // Timesheets
   getTimesheets: (params?: any) => api.get('/resources/timesheets/', { params }),
-  
+
   getTimesheet: (id: string) => api.get(`/resources/timesheets/${id}/`),
-  
+
   createTimesheet: (timesheetData: any) => api.post('/resources/timesheets/', timesheetData),
-  
+
   updateTimesheet: (id: string, timesheetData: any) =>
     api.put(`/resources/timesheets/${id}/`, timesheetData),
-  
+
   deleteTimesheet: (id: string) => api.delete(`/resources/timesheets/${id}/`),
-  
+
   // Timesheet Entries (nested under timesheets)
-  getTimesheetEntries: (timesheetId: string) => 
+  getTimesheetEntries: (timesheetId: string) =>
     api.get(`/resources/timesheets/${timesheetId}/entries/`),
-  
-  createTimesheetEntry: (timesheetId: string, entryData: any) => 
+
+  createTimesheetEntry: (timesheetId: string, entryData: any) =>
     api.post(`/resources/timesheets/${timesheetId}/entries/`, entryData),
-  
+
   updateTimesheetEntry: (timesheetId: string, entryId: string, entryData: any) =>
     api.put(`/resources/timesheets/${timesheetId}/entries/${entryId}/`, entryData),
-  
+
   deleteTimesheetEntry: (timesheetId: string, entryId: string) =>
     api.delete(`/resources/timesheets/${timesheetId}/entries/${entryId}/`),
 
   // Leave Requests
   getLeaveRequests: (params?: any) => api.get('/resources/leave-requests/', { params }),
-  
+
   getLeaveRequest: (id: string) => api.get(`/resources/leave-requests/${id}/`),
-  
-  createLeaveRequest: (leaveData: any) => api.post('/resources/leave-requests/', leaveData),
-  
+
+
+  createLeaveRequest: (leaveData: FormData) =>
+    api.post('/resources/leave-requests/', leaveData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
   updateLeaveRequest: (id: string, leaveData: any) =>
     api.put(`/resources/leave-requests/${id}/`, leaveData),
-  
+
   deleteLeaveRequest: (id: string) => api.delete(`/resources/leave-requests/${id}/`),
-  
+
   // Employee leave requests
-  getEmployeeLeaveRequests: (employeeId: string) => 
+  getEmployeeLeaveRequests: (employeeId: string) =>
     api.get(`/resources/leave-requests/?employee=${employeeId}`),
 
   // Resource Requests
   getResourceRequests: (params?: any) => api.get('/resources/resource-requests/', { params }),
-  
+
   getResourceRequest: (id: string) => api.get(`/resources/resource-requests/${id}/`),
-  
+
   createResourceRequest: (requestData: any) => api.post('/resources/resource-requests/', requestData),
-  
+
   updateResourceRequest: (id: string, requestData: any) =>
     api.put(`/resources/resource-requests/${id}/`, requestData),
-  
+
   deleteResourceRequest: (id: string) => api.delete(`/resources/resource-requests/${id}/`),
-  
+
   // Project resource requests
-  getProjectResourceRequests: (projectId: string) => 
+  getProjectResourceRequests: (projectId: string) =>
     api.get(`/resources/resource-requests/?project=${projectId}`),
 
   // Equipment
   getEquipment: (params?: any) => api.get('/resources/equipment/', { params }),
-  
+
   getEquipmentItem: (id: string) => api.get(`/resources/equipment/${id}/`),
-  
+
   createEquipment: (equipmentData: any) => api.post('/resources/equipment/', equipmentData),
-  
+
   updateEquipment: (id: string, equipmentData: any) =>
     api.put(`/resources/equipment/${id}/`, equipmentData),
-  
+
   deleteEquipment: (id: string) => api.delete(`/resources/equipment/${id}/`),
-  
+
   // Equipment assignment actions
   assignEquipment: (id: string, assignmentData: any) =>
     api.post(`/resources/equipment/${id}/assign/`, assignmentData),
-  
+
   returnEquipment: (id: string) =>
     api.post(`/resources/equipment/${id}/return/`),
 
   // Equipment Maintenance
   getEquipmentMaintenance: (params?: any) => api.get('/resources/equipment-maintenance/', { params }),
-  
+
   getEquipmentMaintenanceRecord: (id: string) => api.get(`/resources/equipment-maintenance/${id}/`),
-  
-  createEquipmentMaintenance: (maintenanceData: any) => 
+
+  createEquipmentMaintenance: (maintenanceData: any) =>
     api.post('/resources/equipment-maintenance/', maintenanceData),
-  
+
   updateEquipmentMaintenance: (id: string, maintenanceData: any) =>
     api.put(`/resources/equipment-maintenance/${id}/`, maintenanceData),
-  
+
   deleteEquipmentMaintenance: (id: string) => api.delete(`/resources/equipment-maintenance/${id}/`),
-  
+
   // Equipment-specific maintenance
-  getEquipmentMaintenanceHistory: (equipmentId: string) => 
+  getEquipmentMaintenanceHistory: (equipmentId: string) =>
     api.get(`/resources/equipment-maintenance/?equipment=${equipmentId}`),
-  
+
   completeMaintenance: (id: string, completionData?: any) =>
     api.post(`/resources/equipment-maintenance/${id}/complete/`, completionData),
 
   // Timesheet actions
   submitTimesheet: (id: string) =>
     api.post(`/resources/timesheets/${id}/submit/`),
-  
+
   approveTimesheet: (id: string, approvalData?: any) =>
     api.post(`/resources/timesheets/${id}/approve/`, approvalData),
-  
+
   rejectTimesheet: (id: string, rejectionData?: any) =>
     api.post(`/resources/timesheets/${id}/reject/`, rejectionData),
 
   // Leave request actions
   approveLeaveRequest: (id: string, approvalData?: any) =>
     api.post(`/resources/leave-requests/${id}/approve/`, approvalData),
-  
+
   rejectLeaveRequest: (id: string, rejectionData?: any) =>
     api.post(`/resources/leave-requests/${id}/reject/`, rejectionData),
 
   // Resource request actions
   submitResourceRequest: (id: string) =>
     api.post(`/resources/resource-requests/${id}/submit/`),
-  
+
   approveResourceRequest: (id: string, approvalData?: any) =>
     api.post(`/resources/resource-requests/${id}/approve/`, approvalData),
-  
+
   rejectResourceRequest: (id: string, rejectionData?: any) =>
     api.post(`/resources/resource-requests/${id}/reject/`, rejectionData),
-  
+
   fulfillResourceRequest: (id: string, fulfillmentData?: any) =>
     api.post(`/resources/resource-requests/${id}/fulfill/`, fulfillmentData),
 
@@ -358,120 +362,120 @@ export const resourcesAPI = {
 
   // General resources
   getAvailableResources: (params?: any) => api.get('/resources/available/', { params }),
-  
+
   getResourcesByDepartment: (params?: any) => api.get('/resources/by_department/', { params }),
-  
+
   getUtilizationSummary: (params?: any) => api.get('/resources/utilization_summary/', { params }),
 };
 
 // Enhanced Projects API with advanced features
 export const projectsAPI = {
   getProjects: (params?: any) => api.get('/projects/projects/', { params }),
-  
+
   getProject: (id: string) => api.get(`/projects/projects/${id}/`),
-  
+
   createProject: (projectData: any) => api.post('/projects/projects/', projectData),
-  
+
   updateProject: (id: string, projectData: any) =>
     api.patch(`/projects/projects/${id}/`, projectData),
-  
+
   deleteProject: (id: string) => api.delete(`/projects/projects/${id}/`),
-  
+
   // Project Documents with enhanced file handling
-  getProjectDocuments: (projectId: string, params?: any) => 
+  getProjectDocuments: (projectId: string, params?: any) =>
     api.get(`/projects/projects/${projectId}/documents/`, { params }),
-  
-  getProjectDocument: (projectId: string, documentId: string) => 
+
+  getProjectDocument: (projectId: string, documentId: string) =>
     api.get(`/projects/projects/${projectId}/documents/${documentId}/`),
-  
-  createProjectDocument: (projectId: string, formData: FormData) => 
+
+  createProjectDocument: (projectId: string, formData: FormData) =>
     api.post(`/projects/projects/${projectId}/documents/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
-  
+
   updateProjectDocument: (projectId: string, documentId: string, formData: FormData) =>
     api.patch(`/projects/projects/${projectId}/documents/${documentId}/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
-  
+
   deleteProjectDocument: (projectId: string, documentId: string) =>
     api.delete(`/projects/projects/${projectId}/documents/${documentId}/`),
-  
+
   downloadProjectDocument: (projectId: string, documentId: string) =>
     api.get(`/projects/projects/${projectId}/documents/${documentId}/download/`, {
       responseType: 'blob'
     }),
-  
+
   // Project Phases with enhanced validation
-  getProjectPhases: (projectId: string, params?: any) => 
+  getProjectPhases: (projectId: string, params?: any) =>
     api.get(`/projects/projects/${projectId}/phases/`, { params }),
-  
-  getProjectPhase: (projectId: string, phaseId: string) => 
+
+  getProjectPhase: (projectId: string, phaseId: string) =>
     api.get(`/projects/projects/${projectId}/phases/${phaseId}/`),
-  
-  createProjectPhase: (projectId: string, phaseData: any) => 
+
+  createProjectPhase: (projectId: string, phaseData: any) =>
     api.post(`/projects/projects/${projectId}/phases/`, phaseData),
-  
+
   updateProjectPhase: (projectId: string, phaseId: string, phaseData: any) =>
     api.patch(`/projects/projects/${projectId}/phases/${phaseId}/`, phaseData),
-  
+
   deleteProjectPhase: (projectId: string, phaseId: string) =>
     api.delete(`/projects/projects/${projectId}/phases/${phaseId}/`),
-  
-  reorderProjectPhases: (projectId: string, phases: Array<{id: string, sequence: number}>) =>
+
+  reorderProjectPhases: (projectId: string, phases: Array<{ id: string, sequence: number }>) =>
     api.post(`/projects/projects/${projectId}/phases/reorder/`, { phases }),
-  
+
   // Project Summary and Progress with enhanced metrics
-  getProjectSummary: (projectId: string) => 
+  getProjectSummary: (projectId: string) =>
     api.get(`/projects/projects/${projectId}/summary/`),
-  
+
   updateProjectProgress: (projectId: string, progressData: { progress: number }) =>
     api.post(`/projects/projects/${projectId}/update-progress/`, progressData),
-  
+
   getProjectTimeline: (projectId: string) =>
     api.get(`/projects/projects/${projectId}/timeline/`),
-  
+
   getProjectBudgetOverview: (projectId: string) =>
     api.get(`/projects/projects/${projectId}/budget-overview/`),
-  
+
   getProjectTeam: (projectId: string) =>
     api.get(`/projects/projects/${projectId}/team/`),
-  
+
   addProjectTeamMember: (projectId: string, memberData: any) =>
     api.post(`/projects/projects/${projectId}/team/`, memberData),
-  
+
   removeProjectTeamMember: (projectId: string, userId: string) =>
     api.delete(`/projects/projects/${projectId}/team/${userId}/`),
-  
+
   // Categories with enhanced statistics
   getCategories: (params?: any) => api.get('/projects/categories/', { params }),
-  
+
   createCategory: (categoryData: any) => api.post('/projects/categories/', categoryData),
-  
+
   updateCategory: (id: string, categoryData: any) =>
     api.patch(`/projects/categories/${id}/`, categoryData),
-  
+
   deleteCategory: (id: string) => api.delete(`/projects/categories/${id}/`),
-  
+
   getCategoryStatistics: (id: string) =>
     api.get(`/projects/categories/${id}/statistics/`),
-  
+
   // Project actions
   archiveProject: (id: string) =>
     api.post(`/projects/projects/${id}/archive/`),
-  
+
   restoreProject: (id: string) =>
     api.post(`/projects/projects/${id}/restore/`),
-  
+
   duplicateProject: (id: string, projectData?: any) =>
     api.post(`/projects/projects/${id}/duplicate/`, projectData),
-  
+
   // Advanced filtering and search
   searchProjects: (query: string, filters?: any) =>
     api.get('/projects/projects/search/', { params: { q: query, ...filters } }),
-  
+
   exportProjects: (format: 'csv' | 'excel' | 'pdf', filters?: any) =>
-    api.get('/projects/projects/export/', { 
+    api.get('/projects/projects/export/', {
       params: { format, ...filters },
       responseType: 'blob'
     }),
@@ -480,75 +484,75 @@ export const projectsAPI = {
 export const financeAPI = {
   // Budgets
   getBudgets: (params?: any) => api.get('/finance/budgets/', { params }),
-  
+
   getBudget: (id: string) => api.get(`/finance/budgets/${id}/`),
-  
+
   createBudget: (budgetData: any) => api.post('/finance/budgets/', budgetData),
-  
+
   updateBudget: (id: string, budgetData: any) =>
     api.put(`/finance/budgets/${id}/`, budgetData),
-  
+
   deleteBudget: (id: string) => api.delete(`/finance/budgets/${id}/`),
-  
+
   // Budget Line Items
-  getBudgetLineItems: (budgetId: string) => 
+  getBudgetLineItems: (budgetId: string) =>
     api.get(`/finance/budgets/${budgetId}/line-items/`),
-  
-  getBudgetLineItem: (budgetId: string, lineItemId: string) => 
+
+  getBudgetLineItem: (budgetId: string, lineItemId: string) =>
     api.get(`/finance/budgets/${budgetId}/line-items/${lineItemId}/`),
-  
-  createBudgetLineItem: (budgetId: string, lineItemData: any) => 
+
+  createBudgetLineItem: (budgetId: string, lineItemData: any) =>
     api.post(`/finance/budgets/${budgetId}/line-items/`, lineItemData),
-  
+
   updateBudgetLineItem: (budgetId: string, lineItemId: string, lineItemData: any) =>
     api.put(`/finance/budgets/${budgetId}/line-items/${lineItemId}/`, lineItemData),
-  
+
   deleteBudgetLineItem: (budgetId: string, lineItemId: string) =>
     api.delete(`/finance/budgets/${budgetId}/line-items/${lineItemId}/`),
-  
+
   // Budget Approvals
-  getBudgetApprovals: (budgetId: string) => 
+  getBudgetApprovals: (budgetId: string) =>
     api.get(`/finance/budgets/${budgetId}/approvals/`),
-  
-  getBudgetApproval: (budgetId: string, approvalId: string) => 
+
+  getBudgetApproval: (budgetId: string, approvalId: string) =>
     api.get(`/finance/budgets/${budgetId}/approvals/${approvalId}/`),
-  
-  createBudgetApproval: (budgetId: string, approvalData: any) => 
+
+  createBudgetApproval: (budgetId: string, approvalData: any) =>
     api.post(`/finance/budgets/${budgetId}/approvals/`, approvalData),
-  
+
   updateBudgetApproval: (budgetId: string, approvalId: string, approvalData: any) =>
     api.put(`/finance/budgets/${budgetId}/approvals/${approvalId}/`, approvalData),
-  
+
   deleteBudgetApproval: (budgetId: string, approvalId: string) =>
     api.delete(`/finance/budgets/${budgetId}/approvals/${approvalId}/`),
-  
+
   // Budget Actions
-  submitBudgetForApproval: (id: string) => 
+  submitBudgetForApproval: (id: string) =>
     api.post(`/finance/budgets/${id}/submit_for_approval/`),
-  
-  approveBudget: (id: string, data?: any) => 
+
+  approveBudget: (id: string, data?: any) =>
     api.post(`/finance/budgets/${id}/approve/`, data),
-  
+
   // Expenses
   getExpenses: (params?: any) => api.get('/finance/expenses/', { params }),
-  
+
   getExpense: (id: string) => api.get(`/finance/expenses/${id}/`),
-  
+
   createExpense: (expenseData: any) => api.post('/finance/expenses/', expenseData),
-  
+
   updateExpense: (id: string, expenseData: any) =>
     api.put(`/finance/expenses/${id}/`, expenseData),
-  
+
   deleteExpense: (id: string) => api.delete(`/finance/expenses/${id}/`),
 
   // Expense Actions
-  approveExpense: (id: string, data?: any) => 
+  approveExpense: (id: string, data?: any) =>
     api.post(`/finance/expenses/${id}/approve/`, data),
 
-  rejectExpense: (id: string, data: any) => 
+  rejectExpense: (id: string, data: any) =>
     api.post(`/finance/expenses/${id}/reject/`, data),
 
-  markExpenseAsPaid: (id: string, data?: any) => 
+  markExpenseAsPaid: (id: string, data?: any) =>
     api.post(`/finance/expenses/${id}/mark_as_paid/`, data),
 
   // Budget Approval Actions
@@ -570,15 +574,15 @@ export const financeAPI = {
   },
 
   // Budget Statistics
-  getBudgetStatistics: (id: string) => 
+  getBudgetStatistics: (id: string) =>
     api.get(`/finance/budgets/${id}/statistics/`),
 
-  getExpenseStatistics: (params?: any) => 
+  getExpenseStatistics: (params?: any) =>
     api.get('/finance/expenses/statistics/', { params }),
 
   // Reports
   generateBudgetReport: (id: string, format: 'pdf' | 'excel' = 'pdf') =>
-    api.get(`/finance/budgets/${id}/report/`, { 
+    api.get(`/finance/budgets/${id}/report/`, {
       params: { format },
       responseType: 'blob'
     }),
@@ -594,35 +598,35 @@ export const financeAPI = {
 export const revenueAPI = {
   // Revenue Clients Management
   getClients: (params?: any) => api.get('/revenue/clients/', { params }),
-  
+
   getClient: (id: string) => api.get(`/revenue/clients/${id}/`),
-  
+
   createClient: (clientData: any) => api.post('/revenue/clients/', clientData),
-  
+
   updateClient: (id: string, clientData: any) =>
     api.put(`/revenue/clients/${id}/`, clientData),
-  
+
   partialUpdateClient: (id: string, clientData: any) =>
     api.patch(`/revenue/clients/${id}/`, clientData),
-  
+
   deleteClient: (id: string) => api.delete(`/revenue/clients/${id}/`),
 
-  getClientRevenueSummary: (id: string) => 
+  getClientRevenueSummary: (id: string) =>
     api.get(`/revenue/clients/${id}/revenue_summary/`),
 
   // Revenue Collections Management
   getCollections: (params?: any) => api.get('/revenue/collections/', { params }),
-  
+
   getCollection: (id: string) => api.get(`/revenue/collections/${id}/`),
-  
+
   createCollection: (collectionData: any) => api.post('/revenue/collections/', collectionData),
-  
+
   updateCollection: (id: string, collectionData: any) =>
     api.put(`/revenue/collections/${id}/`, collectionData),
-  
+
   partialUpdateCollection: (id: string, collectionData: any) =>
     api.patch(`/revenue/collections/${id}/`, collectionData),
-  
+
   deleteCollection: (id: string) => api.delete(`/revenue/collections/${id}/`),
 
   markCollectionCleared: (id: string, clearanceData?: any) =>
@@ -630,17 +634,17 @@ export const revenueAPI = {
 
   // Revenue Invoices Management
   getInvoices: (params?: any) => api.get('/revenue/invoices/', { params }),
-  
+
   getInvoice: (id: string) => api.get(`/revenue/invoices/${id}/`),
-  
+
   createInvoice: (invoiceData: any) => api.post('/revenue/invoices/', invoiceData),
-  
+
   updateInvoice: (id: string, invoiceData: any) =>
     api.put(`/revenue/invoices/${id}/`, invoiceData),
-  
+
   partialUpdateInvoice: (id: string, invoiceData: any) =>
     api.patch(`/revenue/invoices/${id}/`, invoiceData),
-  
+
   deleteInvoice: (id: string) => api.delete(`/revenue/invoices/${id}/`),
 
   getOverdueInvoices: (params?: any) => api.get('/revenue/invoices/overdue_invoices/', { params }),
@@ -652,55 +656,55 @@ export const revenueAPI = {
     api.post(`/revenue/invoices/${id}/send_invoice/`, sendData),
 
   // Invoice Line Items
-  getInvoiceLineItems: (invoiceId: string) => 
+  getInvoiceLineItems: (invoiceId: string) =>
     api.get(`/revenue/invoices/${invoiceId}/line-items/`),
-  
-  getInvoiceLineItem: (invoiceId: string, lineItemId: string) => 
+
+  getInvoiceLineItem: (invoiceId: string, lineItemId: string) =>
     api.get(`/revenue/invoices/${invoiceId}/line-items/${lineItemId}/`),
-  
-  createInvoiceLineItem: (invoiceId: string, lineItemData: any) => 
+
+  createInvoiceLineItem: (invoiceId: string, lineItemData: any) =>
     api.post(`/revenue/invoices/${invoiceId}/line-items/`, lineItemData),
-  
+
   updateInvoiceLineItem: (invoiceId: string, lineItemId: string, lineItemData: any) =>
     api.put(`/revenue/invoices/${invoiceId}/line-items/${lineItemId}/`, lineItemData),
-  
+
   partialUpdateInvoiceLineItem: (invoiceId: string, lineItemId: string, lineItemData: any) =>
     api.patch(`/revenue/invoices/${invoiceId}/line-items/${lineItemId}/`, lineItemData),
-  
+
   deleteInvoiceLineItem: (invoiceId: string, lineItemId: string) =>
     api.delete(`/revenue/invoices/${invoiceId}/line-items/${lineItemId}/`),
 
   // Revenue Streams Management
   getRevenueStreams: (params?: any) => api.get('/revenue/revenue-streams/', { params }),
-  
+
   getRevenueStream: (id: string) => api.get(`/revenue/revenue-streams/${id}/`),
-  
+
   createRevenueStream: (streamData: any) => api.post('/revenue/revenue-streams/', streamData),
-  
+
   updateRevenueStream: (id: string, streamData: any) =>
     api.put(`/revenue/revenue-streams/${id}/`, streamData),
-  
+
   partialUpdateRevenueStream: (id: string, streamData: any) =>
     api.patch(`/revenue/revenue-streams/${id}/`, streamData),
-  
+
   deleteRevenueStream: (id: string) => api.delete(`/revenue/revenue-streams/${id}/`),
 
-  getRevenueStreamPerformanceReport: (params?: any) => 
+  getRevenueStreamPerformanceReport: (params?: any) =>
     api.get('/revenue/revenue-streams/performance_report/', { params }),
 
   // Revenue Records Management
   getRevenues: (params?: any) => api.get('/revenue/revenues/', { params }),
-  
+
   getRevenue: (id: string) => api.get(`/revenue/revenues/${id}/`),
-  
+
   createRevenue: (revenueData: any) => api.post('/revenue/revenues/', revenueData),
-  
+
   updateRevenue: (id: string, revenueData: any) =>
     api.put(`/revenue/revenues/${id}/`, revenueData),
-  
+
   partialUpdateRevenue: (id: string, revenueData: any) =>
     api.patch(`/revenue/revenues/${id}/`, revenueData),
-  
+
   deleteRevenue: (id: string) => api.delete(`/revenue/revenues/${id}/`),
 
   verifyRevenue: (id: string, verificationData?: any) =>
@@ -712,6 +716,7 @@ export const revenueAPI = {
 
 // Analytics API
 export const analyticsAPI = {
+  exportAnalytics: () => api.get("/analytics/analytics/export/", { responseType: "blob" }),
   // Main Analytics Endpoints
   getAnalytics: (params?: any) => api.get('/analytics/analytics/', { params }),
   getDashboardSummary: (params?: any) => api.get('/analytics/analytics/dashboard-summary/', { params }),
@@ -798,76 +803,76 @@ export const analyticsAPI = {
 export const organizationAPI = {
   // Departments
   getDepartments: (params?: any) => api.get('/organization/departments/', { params }),
-  
+
   getDepartment: (id: string) => api.get(`/organization/departments/${id}/`),
-  
+
   createDepartment: (departmentData: any) =>
     api.post('/organization/departments/', departmentData),
-  
+
   updateDepartment: (id: string, departmentData: any) =>
     api.put(`/organization/departments/${id}/`, departmentData),
-  
+
   deleteDepartment: (id: string) =>
     api.delete(`/organization/departments/${id}/`),
-  
+
   // Employees
   getEmployees: (params?: any) => api.get('/organization/employees/', { params }),
-  
+
   getEmployee: (id: string) => api.get(`/organization/employees/${id}/`),
-  
+
   createEmployee: (employeeData: any) =>
     api.post('/organization/employees/', employeeData),
-  
+
   updateEmployee: (id: string, employeeData: any) =>
     api.put(`/organization/employees/${id}/`, employeeData),
-  
+
   deleteEmployee: (id: string) =>
     api.delete(`/organization/employees/${id}/`),
-  
+
   // Skills
   getSkills: (params?: any) => api.get('/organization/skills/', { params }),
-  
+
   getSkill: (id: string) => api.get(`/organization/skills/${id}/`),
-  
+
   createSkill: (skillData: any) =>
     api.post('/organization/skills/', skillData),
-  
+
   updateSkill: (id: string, skillData: any) =>
     api.put(`/organization/skills/${id}/`, skillData),
-  
+
   deleteSkill: (id: string) =>
     api.delete(`/organization/skills/${id}/`),
-  
+
   // Employee Skills
   getEmployeeSkills: (params?: any) => api.get('/organization/employee-skills/', { params }),
-  
+
   getEmployeeSkill: (id: string) => api.get(`/organization/employee-skills/${id}/`),
-  
+
   createEmployeeSkill: (skillData: any) =>
     api.post('/organization/employee-skills/', skillData),
-  
+
   updateEmployeeSkill: (id: string, skillData: any) =>
     api.put(`/organization/employee-skills/${id}/`, skillData),
-  
+
   deleteEmployeeSkill: (id: string) =>
     api.delete(`/organization/employee-skills/${id}/`),
-  
+
   verifyEmployeeSkill: (id: string, data?: any) =>
     api.post(`/organization/employee-skills/${id}/verify/`, data),
 
   // Organization Statistics
-  getDepartmentStatistics: (id: string) => 
+  getDepartmentStatistics: (id: string) =>
     api.get(`/organization/departments/${id}/statistics/`),
 
-  getEmployeeStatistics: (params?: any) => 
+  getEmployeeStatistics: (params?: any) =>
     api.get('/organization/employees/statistics/', { params }),
 
-  getSkillStatistics: (params?: any) => 
+  getSkillStatistics: (params?: any) =>
     api.get('/organization/skills/statistics/', { params }),
 
   // Organization Reports
   generateDepartmentReport: (id: string, format: 'pdf' | 'excel' = 'pdf') =>
-    api.get(`/organization/departments/${id}/report/`, { 
+    api.get(`/organization/departments/${id}/report/`, {
       params: { format },
       responseType: 'blob'
     }),
@@ -899,156 +904,156 @@ export const organizationAPI = {
 export const dashboardAPI = {
   // Overview dashboard data
   getOverview: () => api.get('/dashboard/operations/quick-stats/'),
-  
+
   getRecentActivity: () => api.get('/dashboard/operations/notifications/'),
-  
+
   getOverviewDashboards: () => api.get('/dashboard/overview-dashboards/'),
-  
-  getOverviewDashboardData: (dashboardId: string) => 
+
+  getOverviewDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/overview-dashboards/${dashboardId}/data/`),
 
   // Financial dashboard data
   getFinancialDashboards: () => api.get('/dashboard/financial-dashboards/'),
-  getFinancialDashboardData: (dashboardId: string) => 
+  getFinancialDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/financial-dashboards/${dashboardId}/data/`),
 
   // Project dashboard data
   getProjectDashboards: () => api.get('/dashboard/project-dashboards/'),
-  getProjectDashboardData: (dashboardId: string) => 
+  getProjectDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/project-dashboards/${dashboardId}/data/`),
 
   // Resource dashboard data
   getResourceDashboards: () => api.get('/dashboard/resource-dashboards/'),
-  getResourceDashboardData: (dashboardId: string) => 
+  getResourceDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/resource-dashboards/${dashboardId}/data/`),
 
   // Executive dashboard data
   getExecutiveDashboards: () => api.get('/dashboard/executive-dashboards/'),
-  getExecutiveDashboardData: (dashboardId: string) => 
+  getExecutiveDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/executive-dashboards/${dashboardId}/data/`),
 
   // Custom dashboard data
   getCustomDashboards: () => api.get('/dashboard/custom-dashboards/'),
-  getCustomDashboardData: (dashboardId: string) => 
+  getCustomDashboardData: (dashboardId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/data/`),
 
   // Custom dashboard CRUD
-  createCustomDashboard: (dashboardData: any) => 
+  createCustomDashboard: (dashboardData: any) =>
     api.post('/dashboard/custom-dashboards/', dashboardData),
-  getCustomDashboard: (id: string) => 
+  getCustomDashboard: (id: string) =>
     api.get(`/dashboard/custom-dashboards/${id}/`),
-  updateCustomDashboard: (id: string, dashboardData: any) => 
+  updateCustomDashboard: (id: string, dashboardData: any) =>
     api.put(`/dashboard/custom-dashboards/${id}/`, dashboardData),
-  patchCustomDashboard: (id: string, dashboardData: any) => 
+  patchCustomDashboard: (id: string, dashboardData: any) =>
     api.patch(`/dashboard/custom-dashboards/${id}/`, dashboardData),
-  deleteCustomDashboard: (id: string) => 
+  deleteCustomDashboard: (id: string) =>
     api.delete(`/dashboard/custom-dashboards/${id}/`),
-  cloneCustomDashboard: (id: string) => 
+  cloneCustomDashboard: (id: string) =>
     api.post(`/dashboard/custom-dashboards/${id}/clone/`),
 
   // Custom dashboard filters
-  getCustomDashboardFilters: (dashboardId: string) => 
+  getCustomDashboardFilters: (dashboardId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/filters/`),
-  createCustomDashboardFilter: (dashboardId: string, filterData: any) => 
+  createCustomDashboardFilter: (dashboardId: string, filterData: any) =>
     api.post(`/dashboard/custom-dashboards/${dashboardId}/filters/`, filterData),
-  getCustomDashboardFilter: (dashboardId: string, filterId: string) => 
+  getCustomDashboardFilter: (dashboardId: string, filterId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/filters/${filterId}/`),
-  updateCustomDashboardFilter: (dashboardId: string, filterId: string, filterData: any) => 
+  updateCustomDashboardFilter: (dashboardId: string, filterId: string, filterData: any) =>
     api.put(`/dashboard/custom-dashboards/${dashboardId}/filters/${filterId}/`, filterData),
-  patchCustomDashboardFilter: (dashboardId: string, filterId: string, filterData: any) => 
+  patchCustomDashboardFilter: (dashboardId: string, filterId: string, filterData: any) =>
     api.patch(`/dashboard/custom-dashboards/${dashboardId}/filters/${filterId}/`, filterData),
-  deleteCustomDashboardFilter: (dashboardId: string, filterId: string) => 
+  deleteCustomDashboardFilter: (dashboardId: string, filterId: string) =>
     api.delete(`/dashboard/custom-dashboards/${dashboardId}/filters/${filterId}/`),
 
   // Custom dashboard widgets
-  getCustomDashboardWidgets: (dashboardId: string) => 
+  getCustomDashboardWidgets: (dashboardId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/widgets/`),
-  createCustomDashboardWidget: (dashboardId: string, widgetData: any) => 
+  createCustomDashboardWidget: (dashboardId: string, widgetData: any) =>
     api.post(`/dashboard/custom-dashboards/${dashboardId}/widgets/`, widgetData),
-  getCustomDashboardWidget: (dashboardId: string, widgetId: string) => 
+  getCustomDashboardWidget: (dashboardId: string, widgetId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/widgets/${widgetId}/`),
-  updateCustomDashboardWidget: (dashboardId: string, widgetId: string, widgetData: any) => 
+  updateCustomDashboardWidget: (dashboardId: string, widgetId: string, widgetData: any) =>
     api.put(`/dashboard/custom-dashboards/${dashboardId}/widgets/${widgetId}/`, widgetData),
-  patchCustomDashboardWidget: (dashboardId: string, widgetId: string, widgetData: any) => 
+  patchCustomDashboardWidget: (dashboardId: string, widgetId: string, widgetData: any) =>
     api.patch(`/dashboard/custom-dashboards/${dashboardId}/widgets/${widgetId}/`, widgetData),
-  deleteCustomDashboardWidget: (dashboardId: string, widgetId: string) => 
+  deleteCustomDashboardWidget: (dashboardId: string, widgetId: string) =>
     api.delete(`/dashboard/custom-dashboards/${dashboardId}/widgets/${widgetId}/`),
-  getCustomDashboardWidgetData: (dashboardId: string, widgetId: string) => 
+  getCustomDashboardWidgetData: (dashboardId: string, widgetId: string) =>
     api.get(`/dashboard/custom-dashboards/${dashboardId}/widgets/${widgetId}/data/`),
 
   // Dashboard exports
   getDashboardExports: () => api.get('/dashboard/dashboard-exports/'),
-  createDashboardExport: (exportData: any) => 
+  createDashboardExport: (exportData: any) =>
     api.post('/dashboard/dashboard-exports/', exportData),
-  getDashboardExport: (id: string) => 
+  getDashboardExport: (id: string) =>
     api.get(`/dashboard/dashboard-exports/${id}/`),
-  updateDashboardExport: (id: string, exportData: any) => 
+  updateDashboardExport: (id: string, exportData: any) =>
     api.put(`/dashboard/dashboard-exports/${id}/`, exportData),
-  patchDashboardExport: (id: string, exportData: any) => 
+  patchDashboardExport: (id: string, exportData: any) =>
     api.patch(`/dashboard/dashboard-exports/${id}/`, exportData),
-  deleteDashboardExport: (id: string) => 
+  deleteDashboardExport: (id: string) =>
     api.delete(`/dashboard/dashboard-exports/${id}/`),
-  processDashboardExport: (id: string) => 
+  processDashboardExport: (id: string) =>
     api.post(`/dashboard/dashboard-exports/${id}/process/`),
 
   // Dashboard filters (global)
   getDashboardFilters: () => api.get('/dashboard/dashboard-filters/'),
-  createDashboardFilter: (filterData: any) => 
+  createDashboardFilter: (filterData: any) =>
     api.post('/dashboard/dashboard-filters/', filterData),
-  getDashboardFilter: (id: string) => 
+  getDashboardFilter: (id: string) =>
     api.get(`/dashboard/dashboard-filters/${id}/`),
-  updateDashboardFilter: (id: string, filterData: any) => 
+  updateDashboardFilter: (id: string, filterData: any) =>
     api.put(`/dashboard/dashboard-filters/${id}/`, filterData),
-  patchDashboardFilter: (id: string, filterData: any) => 
+  patchDashboardFilter: (id: string, filterData: any) =>
     api.patch(`/dashboard/dashboard-filters/${id}/`, filterData),
-  deleteDashboardFilter: (id: string) => 
+  deleteDashboardFilter: (id: string) =>
     api.delete(`/dashboard/dashboard-filters/${id}/`),
 
   // Dashboard shares
   getDashboardShares: () => api.get('/dashboard/dashboard-shares/'),
-  createDashboardShare: (shareData: any) => 
+  createDashboardShare: (shareData: any) =>
     api.post('/dashboard/dashboard-shares/', shareData),
-  getDashboardShare: (id: string) => 
+  getDashboardShare: (id: string) =>
     api.get(`/dashboard/dashboard-shares/${id}/`),
-  updateDashboardShare: (id: string, shareData: any) => 
+  updateDashboardShare: (id: string, shareData: any) =>
     api.put(`/dashboard/dashboard-shares/${id}/`, shareData),
-  patchDashboardShare: (id: string, shareData: any) => 
+  patchDashboardShare: (id: string, shareData: any) =>
     api.patch(`/dashboard/dashboard-shares/${id}/`, shareData),
-  deleteDashboardShare: (id: string) => 
+  deleteDashboardShare: (id: string) =>
     api.delete(`/dashboard/dashboard-shares/${id}/`),
-  revokeDashboardShare: (id: string) => 
+  revokeDashboardShare: (id: string) =>
     api.post(`/dashboard/dashboard-shares/${id}/revoke/`),
 
   // Dashboard widgets (global)
   getDashboardWidgets: () => api.get('/dashboard/dashboard-widgets/'),
-  createDashboardWidget: (widgetData: any) => 
+  createDashboardWidget: (widgetData: any) =>
     api.post('/dashboard/dashboard-widgets/', widgetData),
-  getDashboardWidget: (id: string) => 
+  getDashboardWidget: (id: string) =>
     api.get(`/dashboard/dashboard-widgets/${id}/`),
-  updateDashboardWidget: (id: string, widgetData: any) => 
+  updateDashboardWidget: (id: string, widgetData: any) =>
     api.put(`/dashboard/dashboard-widgets/${id}/`, widgetData),
-  patchDashboardWidget: (id: string, widgetData: any) => 
+  patchDashboardWidget: (id: string, widgetData: any) =>
     api.patch(`/dashboard/dashboard-widgets/${id}/`, widgetData),
-  deleteDashboardWidget: (id: string) => 
+  deleteDashboardWidget: (id: string) =>
     api.delete(`/dashboard/dashboard-widgets/${id}/`),
-  getDashboardWidgetData: (id: string) => 
+  getDashboardWidgetData: (id: string) =>
     api.get(`/dashboard/dashboard-widgets/${id}/data/`),
 
   // Dashboard operations
-  markNotificationRead: (notificationData?: any) => 
+  markNotificationRead: (notificationData?: any) =>
     api.post('/dashboard/operations/mark-notification-read/', notificationData),
   getNotifications: () => api.get('/dashboard/operations/notifications/'),
-  createNotification: (notificationData: any) => 
+  createNotification: (notificationData: any) =>
     api.post('/dashboard/operations/notifications/', notificationData),
   getQuickStats: () => api.get('/dashboard/operations/quick-stats/'),
-  createQuickStats: (statsData: any) => 
+  createQuickStats: (statsData: any) =>
     api.post('/dashboard/operations/quick-stats/', statsData),
-  searchDashboard: (searchData: any) => 
+  searchDashboard: (searchData: any) =>
     api.post('/dashboard/operations/search/', searchData),
-  updateUserPreferences: (preferencesData: any) => 
+  updateUserPreferences: (preferencesData: any) =>
     api.post('/dashboard/operations/update-preferences/', preferencesData),
   getUserPreferences: () => api.get('/dashboard/operations/user-preferences/'),
-  createUserPreferences: (preferencesData: any) => 
+  createUserPreferences: (preferencesData: any) =>
     api.post('/dashboard/operations/user-preferences/', preferencesData),
 
   // Special endpoints
@@ -1061,17 +1066,17 @@ export const dashboardAPI = {
 export const risksAPI = {
   // Risk Assessments Management
   getRiskAssessments: (params?: any) => api.get('/risks/assessments/', { params }),
-  
+
   getRiskAssessment: (id: string) => api.get(`/risks/assessments/${id}/`),
-  
+
   createRiskAssessment: (assessmentData: any) => api.post('/risks/assessments/', assessmentData),
-  
+
   updateRiskAssessment: (id: string, assessmentData: any) =>
     api.put(`/risks/assessments/${id}/`, assessmentData),
-  
+
   partialUpdateRiskAssessment: (id: string, assessmentData: any) =>
     api.patch(`/risks/assessments/${id}/`, assessmentData),
-  
+
   deleteRiskAssessment: (id: string) => api.delete(`/risks/assessments/${id}/`),
 
   approveRiskAssessment: (id: string, approvalData?: any) =>
@@ -1079,74 +1084,74 @@ export const risksAPI = {
 
   // Risk Categories Management
   getRiskCategories: (params?: any) => api.get('/risks/categories/', { params }),
-  
+
   getRiskCategory: (id: string) => api.get(`/risks/categories/${id}/`),
-  
+
   createRiskCategory: (categoryData: any) => api.post('/risks/categories/', categoryData),
-  
+
   updateRiskCategory: (id: string, categoryData: any) =>
     api.put(`/risks/categories/${id}/`, categoryData),
-  
+
   partialUpdateRiskCategory: (id: string, categoryData: any) =>
     api.patch(`/risks/categories/${id}/`, categoryData),
-  
+
   deleteRiskCategory: (id: string) => api.delete(`/risks/categories/${id}/`),
 
   // Risk Issues Management
   getRiskIssues: (params?: any) => api.get('/risks/issues/', { params }),
-  
+
   getRiskIssue: (id: string) => api.get(`/risks/issues/${id}/`),
-  
+
   createRiskIssue: (issueData: any) => api.post('/risks/issues/', issueData),
-  
+
   updateRiskIssue: (id: string, issueData: any) =>
     api.put(`/risks/issues/${id}/`, issueData),
-  
+
   partialUpdateRiskIssue: (id: string, issueData: any) =>
     api.patch(`/risks/issues/${id}/`, issueData),
-  
+
   deleteRiskIssue: (id: string) => api.delete(`/risks/issues/${id}/`),
 
   assignRiskIssue: (id: string, assignmentData: any) =>
     api.post(`/risks/issues/${id}/assign/`, assignmentData),
-  
+
   resolveRiskIssue: (id: string, resolutionData?: any) =>
     api.post(`/risks/issues/${id}/resolve/`, resolutionData),
 
   // Risk Mitigations Management
   getRiskMitigations: (params?: any) => api.get('/risks/mitigations/', { params }),
-  
+
   getRiskMitigation: (id: string) => api.get(`/risks/mitigations/${id}/`),
-  
+
   createRiskMitigation: (mitigationData: any) => api.post('/risks/mitigations/', mitigationData),
-  
+
   updateRiskMitigation: (id: string, mitigationData: any) =>
     api.put(`/risks/mitigations/${id}/`, mitigationData),
-  
+
   partialUpdateRiskMitigation: (id: string, mitigationData: any) =>
     api.patch(`/risks/mitigations/${id}/`, mitigationData),
-  
+
   deleteRiskMitigation: (id: string) => api.delete(`/risks/mitigations/${id}/`),
 
   markMitigationCompleted: (id: string, completionData?: any) =>
     api.post(`/risks/mitigations/${id}/mark_completed/`, completionData),
-  
+
   updateMitigationProgress: (id: string, progressData: any) =>
     api.post(`/risks/mitigations/${id}/update_progress/`, progressData),
 
   // Risk Matrices Management
   getRiskMatrices: (params?: any) => api.get('/risks/risk-matrices/', { params }),
-  
+
   getRiskMatrix: (id: string) => api.get(`/risks/risk-matrices/${id}/`),
-  
+
   createRiskMatrix: (matrixData: any) => api.post('/risks/risk-matrices/', matrixData),
-  
+
   updateRiskMatrix: (id: string, matrixData: any) =>
     api.put(`/risks/risk-matrices/${id}/`, matrixData),
-  
+
   partialUpdateRiskMatrix: (id: string, matrixData: any) =>
     api.patch(`/risks/risk-matrices/${id}/`, matrixData),
-  
+
   deleteRiskMatrix: (id: string) => api.delete(`/risks/risk-matrices/${id}/`),
 
   calculateRisk: (id: string, calculationData?: any) =>
@@ -1154,37 +1159,37 @@ export const risksAPI = {
 
   // Risk Registers Management
   getRiskRegisters: (params?: any) => api.get('/risks/risk-registers/', { params }),
-  
+
   getRiskRegister: (id: string) => api.get(`/risks/risk-registers/${id}/`),
-  
+
   createRiskRegister: (registerData: any) => api.post('/risks/risk-registers/', registerData),
-  
+
   updateRiskRegister: (id: string, registerData: any) =>
     api.put(`/risks/risk-registers/${id}/`, registerData),
-  
+
   partialUpdateRiskRegister: (id: string, registerData: any) =>
     api.patch(`/risks/risk-registers/${id}/`, registerData),
-  
+
   deleteRiskRegister: (id: string) => api.delete(`/risks/risk-registers/${id}/`),
 
   // Main Risk Items Management
   getRisks: (params?: any) => api.get('/risks/risks/', { params }),
-  
+
   getRisk: (id: string) => api.get(`/risks/risks/${id}/`),
-  
+
   createRisk: (riskData: any) => api.post('/risks/risks/', riskData),
-  
+
   updateRisk: (id: string, riskData: any) =>
     api.put(`/risks/risks/${id}/`, riskData),
-  
+
   partialUpdateRisk: (id: string, riskData: any) =>
     api.patch(`/risks/risks/${id}/`, riskData),
-  
+
   deleteRisk: (id: string) => api.delete(`/risks/risks/${id}/`),
 
   closeRisk: (id: string, closureData?: any) =>
     api.post(`/risks/risks/${id}/close/`, closureData),
-  
+
   escalateRisk: (id: string, escalationData?: any) =>
     api.post(`/risks/risks/${id}/escalate/`, escalationData),
 
@@ -1195,21 +1200,21 @@ export const risksAPI = {
 
   // Risk Reports
   getRiskReports: (params?: any) => api.get('/risks/reports/', { params }),
-  
+
   getRiskReport: (id: string) => api.get(`/risks/reports/${id}/`),
-  
+
   createRiskReport: (reportData: any) => api.post('/risks/reports/', reportData),
-  
+
   updateRiskReport: (id: string, reportData: any) =>
     api.put(`/risks/reports/${id}/`, reportData),
-  
+
   partialUpdateRiskReport: (id: string, reportData: any) =>
     api.patch(`/risks/reports/${id}/`, reportData),
-  
+
   deleteRiskReport: (id: string) => api.delete(`/risks/reports/${id}/`),
-  
+
   downloadRiskReport: (id: string) => api.get(`/risks/reports/${id}/download/`),
-  
+
   shareRiskReport: (id: string, shareData?: any) =>
     api.post(`/risks/reports/${id}/share/`, shareData),
 
